@@ -109,13 +109,22 @@ export const DAILY_RESET_TIMEZONE_OFFSET_MIN = 9 * 60;
  * module; keep in sync with `functions/src/shared/economy.ts`.
  */
 export const MAX_RESOURCE_GAIN_PER_SOURCE = {
-  block_puzzle: { snack: 15 },
+  block_puzzle: { snack: 50 },
   merge_game: { starDust: 50 },
   quiz: { magicShard: 10, gachaTicket: 1 },
   daily_mission: { snack: 30, starDust: 10 },
   level_up: { magicStone: 3, gachaTicket: 1 },
   login_bonus: { snack: 20, starDust: 5, magicStone: 1 },
   ad_reward: { snack: 10, starDust: 5 },
+} as const;
+
+/**
+ * Per-line / per-combo gameplay rewards for the block puzzle. The session
+ * total is capped by MAX_RESOURCE_GAIN_PER_SOURCE.block_puzzle on grant.
+ */
+export const BLOCK_PUZZLE_REWARD = {
+  perLine: 5,
+  comboBonus: 15,
 } as const;
 
 export type ResourceGainSource = keyof typeof MAX_RESOURCE_GAIN_PER_SOURCE;

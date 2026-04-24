@@ -19,7 +19,7 @@ export const MAX_RESOURCE_GAIN_PER_SOURCE: Record<
   string,
   Partial<Record<ResourceKey, number>>
 > = {
-  block_puzzle: { snack: 15 },
+  block_puzzle: { snack: 50 },
   merge_game: { starDust: 50 },
   quiz: { magicShard: 10, gachaTicket: 1 },
   daily_mission: { snack: 30, starDust: 10 },

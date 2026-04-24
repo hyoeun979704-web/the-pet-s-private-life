@@ -1,4 +1,4 @@
-import { MAX_RESOURCE_GAIN_PER_SOURCE } from '@/config/Constants';
+import { BLOCK_PUZZLE_REWARD } from '@/config/Constants';
 
 export interface BlockRewardInput {
   rowsCleared: number;
@@ -11,18 +11,21 @@ export interface BlockReward {
   tier: 'none' | 'single' | 'combo';
 }
 
-const PER_LINE = 5;
-const COMBO_TOTAL = MAX_RESOURCE_GAIN_PER_SOURCE.block_puzzle.snack; // 15
-
 /**
- * Pure: maps cleared-line counts to a snack reward respecting the server cap.
- *  - 0 lines: 0 snack
- *  - 1 line:  5 snack
- *  - 2+ lines (combo): 15 snack (server cap; cannot exceed without rejection)
+ * Pure: per-placement snack reward.
+ *  - 0 lines cleared:  0 snack
+ *  - 1 line cleared:   perLine (5)
+ *  - 2+ lines (combo): perLine * total + comboBonus (15)
+ *
+ * Session totals accumulate; the server caps the GRANT call at
+ * MAX_RESOURCE_GAIN_PER_SOURCE.block_puzzle.snack (50).
  */
 export function blockReward(input: BlockRewardInput): BlockReward {
   const total = input.rowsCleared + input.colsCleared;
   if (total === 0) return { snack: 0, tier: 'none' };
-  if (total === 1) return { snack: PER_LINE, tier: 'single' };
-  return { snack: COMBO_TOTAL, tier: 'combo' };
+  if (total === 1) return { snack: BLOCK_PUZZLE_REWARD.perLine, tier: 'single' };
+  return {
+    snack: BLOCK_PUZZLE_REWARD.perLine * total + BLOCK_PUZZLE_REWARD.comboBonus,
+    tier: 'combo',
+  };
 }

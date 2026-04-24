@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DESIGN_TOKENS } from '@/config/Constants';
+import { DESIGN_TOKENS, MAX_RESOURCE_GAIN_PER_SOURCE } from '@/config/Constants';
 import shapesData from '@/data/blockShapes.json';
 import type { BlockShape, TraySlot } from '@/entities/BlockShape';
 import { BlockPuzzleSystem, type Cell } from '@/systems/BlockPuzzleSystem';
@@ -13,6 +13,9 @@ const CELL_PX = 48;
 const BOARD_PX = BOARD_W * CELL_PX;
 const SESSION_SEC = 180;
 const TRAY_SLOT_PX = 160;
+const TRAY_TILE_PX = 24;
+const DRAG_SCALE = CELL_PX / TRAY_TILE_PX; // makes dragged shape match grid cells
+const MAX_GRANT_PER_CALL = MAX_RESOURCE_GAIN_PER_SOURCE.block_puzzle.snack;
 
 const COLOR_BY_INDEX = ['#FFC8DD', '#FAEDCB', '#A0C4FF'] as const;
 
@@ -42,8 +45,6 @@ export class BlockPuzzleScene extends Phaser.Scene {
   private boardOriginY = 0;
 
   private sessionSnack = 0;
-
-  private comboCount = 0;
 
   private startedAtMs = 0;
 
@@ -205,6 +206,7 @@ export class BlockPuzzleScene extends Phaser.Scene {
     container.setData('homeY', container.y);
 
     container.on('dragstart', () => {
+      container.setScale(DRAG_SCALE);
       this.dragState = {
         slotIndex,
         shape: slot.shape,
@@ -263,16 +265,20 @@ export class BlockPuzzleScene extends Phaser.Scene {
     this.ghostGfx.clear();
     this.dragState = null;
 
-    if (!anchor) {
+    const restoreToTray = (): void => {
+      container.setScale(1);
       container.x = originX;
       container.y = originY;
+    };
+
+    if (!anchor) {
+      restoreToTray();
       return;
     }
 
     const res = this.system.place(slotIndex, anchor.x, anchor.y);
     if (!res.ok) {
-      container.x = originX;
-      container.y = originY;
+      restoreToTray();
       return;
     }
 
@@ -282,7 +288,6 @@ export class BlockPuzzleScene extends Phaser.Scene {
     });
     if (reward.tier !== 'none') {
       this.sessionSnack += reward.snack;
-      if (reward.tier === 'combo') this.comboCount += 1;
     }
 
     container.destroy();
@@ -297,11 +302,12 @@ export class BlockPuzzleScene extends Phaser.Scene {
     this.gameOver = reason === 'game-over';
     const services = getServices();
     if (services && this.sessionSnack > 0) {
-      // Server caps per-call at 15 snack; split the session total into
-      // per-combo grants by replaying what we tracked.
-      // (MVP: single grant at the cap per call; extend if session rewards
-      // grow.)
-      const capped = Math.min(this.sessionSnack, 15);
+      // Server enforces MAX_RESOURCE_GAIN_PER_SOURCE.block_puzzle.snack (50)
+      // per call. A 3-min session can earn more than that; we cap once and
+      // surface the remainder to the player as session feedback (the cap
+      // intentionally creates scarcity that pushes engagement to other
+      // minigames + ads).
+      const capped = Math.min(this.sessionSnack, MAX_GRANT_PER_CALL);
       await services.economy.grant('block_puzzle', { snack: capped });
     }
     this.scene.start('MainScene');

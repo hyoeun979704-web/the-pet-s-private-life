@@ -128,13 +128,16 @@ describe('BlockReward', () => {
     });
   });
 
-  it('combo (2+) -> 15 snack capped', () => {
+  it('combo (2 lines) -> 5*2 + 15 = 25 snack', () => {
     expect(blockReward({ rowsCleared: 1, colsCleared: 1 })).toEqual({
-      snack: 15,
+      snack: 25,
       tier: 'combo',
     });
+  });
+
+  it('larger combo (3 lines) -> 5*3 + 15 = 30 snack', () => {
     expect(blockReward({ rowsCleared: 3, colsCleared: 0 })).toEqual({
-      snack: 15,
+      snack: 30,
       tier: 'combo',
     });
   });
