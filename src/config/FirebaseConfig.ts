@@ -75,26 +75,55 @@ export function onAuthChange(listener: (user: User | null) => void): () => void 
   return onAuthStateChanged(auth, listener);
 }
 
+export type AuthFailureCode =
+  | 'no-auth'
+  | 'credential-already-in-use'
+  | 'cancelled'
+  | 'network'
+  | 'unknown';
+
+export type GoogleAuthResult =
+  | { ok: true; user: User; linkedFromAnonymous: boolean }
+  | { ok: false; code: AuthFailureCode; error?: unknown };
+
+interface FirebaseAuthError {
+  code?: string;
+}
+
+function classifyAuthError(err: unknown): AuthFailureCode {
+  const code = (err as FirebaseAuthError | null)?.code;
+  if (!code) return 'unknown';
+  if (code === 'auth/credential-already-in-use') return 'credential-already-in-use';
+  if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return 'cancelled';
+  if (code === 'auth/network-request-failed') return 'network';
+  return 'unknown';
+}
+
 /**
  * If the current user is anonymous, links the Google credential to preserve
  * the guest playerId (uid). Otherwise performs a standard Google sign-in.
+ *
+ * Returns a discriminated union so callers can distinguish cancel from
+ * credential-collision (which needs a UI prompt "merge with existing
+ * account?") from network errors.
  */
-export async function signInOrLinkGoogle(): Promise<User | null> {
-  if (!auth) return null;
+export async function signInOrLinkGoogle(): Promise<GoogleAuthResult> {
+  if (!auth) return { ok: false, code: 'no-auth' };
   const provider = new GoogleAuthProvider();
   const user = auth.currentUser;
   try {
     if (user?.isAnonymous) {
       const cred = await linkWithPopup(user, provider);
       logger.info('firebase.linked', { uid: cred.user.uid });
-      return cred.user;
+      return { ok: true, user: cred.user, linkedFromAnonymous: true };
     }
     const cred = await signInWithPopup(auth, provider);
     logger.info('firebase.googleSignedIn', { uid: cred.user.uid });
-    return cred.user;
+    return { ok: true, user: cred.user, linkedFromAnonymous: false };
   } catch (err) {
-    logger.error('firebase.googleFailed', err);
-    return null;
+    const code = classifyAuthError(err);
+    logger.error('firebase.googleFailed', { code, err: String(err) });
+    return { ok: false, code, error: err };
   }
 }
 
