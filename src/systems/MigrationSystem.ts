@@ -19,9 +19,13 @@ export class MigrationError extends Error {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type LooseSave = { schemaVersion?: number } & Record<string, any>;
+type LooseSave = Record<string, unknown> & { schemaVersion?: number };
 type Migrator = (data: LooseSave) => LooseSave;
+
+function toLoose(raw: unknown): LooseSave {
+  if (raw && typeof raw === 'object') return raw as LooseSave;
+  return {};
+}
 
 /**
  * Registry of forward migrators. Key N migrates from (N-1) -> N.
@@ -35,8 +39,9 @@ const MIGRATIONS: Record<number, Migrator> = {
   // }),
 };
 
-export function migrate(raw: LooseSave): MigrationResult {
-  const fromVersion = Number.isInteger(raw.schemaVersion) ? (raw.schemaVersion as number) : 0;
+export function migrate(raw: unknown): MigrationResult {
+  const loose = toLoose(raw);
+  const fromVersion = Number.isInteger(loose.schemaVersion) ? (loose.schemaVersion as number) : 0;
   if (fromVersion > SAVE_SCHEMA_VERSION) {
     throw new MigrationError(
       `save is from a newer schema (v${fromVersion}) than this client (v${SAVE_SCHEMA_VERSION})`,
@@ -45,7 +50,7 @@ export function migrate(raw: LooseSave): MigrationResult {
     );
   }
 
-  let current: LooseSave = raw;
+  let current: LooseSave = loose;
   const applied: number[] = [];
   for (let next = fromVersion + 1; next <= SAVE_SCHEMA_VERSION; next += 1) {
     const migrator = MIGRATIONS[next];
@@ -71,8 +76,8 @@ export function migrate(raw: LooseSave): MigrationResult {
 /**
  * Convenience: returns true if `raw` is at the current schema version.
  */
-export function isCurrent(raw: LooseSave): boolean {
-  return raw.schemaVersion === SAVE_SCHEMA_VERSION;
+export function isCurrent(raw: unknown): boolean {
+  return toLoose(raw).schemaVersion === SAVE_SCHEMA_VERSION;
 }
 
 /**

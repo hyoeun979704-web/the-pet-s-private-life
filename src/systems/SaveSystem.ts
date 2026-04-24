@@ -3,6 +3,24 @@ import { createInitialSaveData } from '@/entities/SaveData';
 import { migrate } from '@/systems/MigrationSystem';
 import { logger } from '@/utils/Logger';
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function deepClone<T>(value: T): T {
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+/**
+ * Backend contract:
+ * - `load` returns `null` ONLY when the player has no save yet.
+ * - `load` MUST throw on network/IO/parse errors so SaveSystem can tell
+ *   "new player" from "transient failure" and avoid overwriting existing
+ *   data with a fresh save.
+ */
 export interface SaveBackend {
   name: string;
   load(playerId: string): Promise<unknown | null>;
@@ -12,6 +30,19 @@ export interface SaveBackend {
 export interface SaveSystemOptions {
   backend: SaveBackend;
   now?: () => number;
+  /** Max retries for save() before surfacing failure to the caller. */
+  saveRetries?: number;
+}
+
+export type SaveResult =
+  | { ok: true }
+  | { ok: false; error: unknown };
+
+export class SaveLoadError extends Error {
+  constructor(message: string, public readonly cause: unknown) {
+    super(message);
+    this.name = 'SaveLoadError';
+  }
 }
 
 export class SaveSystem {
@@ -19,55 +50,76 @@ export class SaveSystem {
 
   private readonly now: () => number;
 
+  private readonly saveRetries: number;
+
   private cache: SaveData | null = null;
 
   constructor(options: SaveSystemOptions) {
     this.backend = options.backend;
     this.now = options.now ?? (() => Date.now());
+    this.saveRetries = options.saveRetries ?? 3;
   }
 
+  /**
+   * Loads the player's save. Throws SaveLoadError on backend failure so the
+   * caller can route to the offline flow instead of silently overwriting.
+   */
   async load(playerId: string): Promise<SaveData> {
-    const raw = await this.safeLoad(playerId);
+    let raw: unknown | null;
+    try {
+      raw = await this.backend.load(playerId);
+    } catch (err) {
+      logger.error('save.load.failed', err);
+      throw new SaveLoadError('save backend load failed', err);
+    }
     if (!raw) {
       const fresh = createInitialSaveData(playerId, this.now());
       this.cache = fresh;
-      await this.safeSave(playerId, fresh);
+      const res = await this.save(fresh);
+      if (!res.ok) throw new SaveLoadError('could not persist fresh save', res.error);
       return fresh;
     }
     const migrated = migrate(raw as Record<string, unknown>);
+    // playerId is authoritative from the auth layer; any migrator that
+    // renames/moves it must set the new field explicitly.
     migrated.data.playerId = playerId;
     this.cache = migrated.data;
     if (migrated.applied.length > 0) {
       logger.info('save.migrated', { from: migrated.fromVersion, to: migrated.toVersion });
-      await this.safeSave(playerId, migrated.data);
+      const res = await this.save(migrated.data);
+      if (!res.ok) throw new SaveLoadError('could not persist migrated save', res.error);
     }
     return migrated.data;
   }
 
-  async save(data: SaveData): Promise<void> {
+  /**
+   * Persists `data` via the backend with up to `saveRetries` attempts and
+   * exponential backoff (200/400/800ms). Returns a SaveResult instead of
+   * throwing so callers can decide how to notify the user.
+   */
+  async save(data: SaveData): Promise<SaveResult> {
     this.cache = data;
-    await this.safeSave(data.playerId, data);
+    let lastErr: unknown = null;
+    for (let attempt = 0; attempt < this.saveRetries; attempt += 1) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await this.backend.save(data.playerId, data);
+        return { ok: true };
+      } catch (err) {
+        lastErr = err;
+        logger.warn('save.save.retry', { attempt: attempt + 1, err: String(err) });
+        if (attempt < this.saveRetries - 1) {
+          // eslint-disable-next-line no-await-in-loop
+          await wait(200 * 2 ** attempt);
+        }
+      }
+    }
+    logger.error('save.save.failed', lastErr);
+    return { ok: false, error: lastErr };
   }
 
   getCached(): SaveData | null {
     return this.cache;
-  }
-
-  private async safeLoad(playerId: string): Promise<unknown | null> {
-    try {
-      return await this.backend.load(playerId);
-    } catch (err) {
-      logger.error('save.load.failed', err);
-      return null;
-    }
-  }
-
-  private async safeSave(playerId: string, data: SaveData): Promise<void> {
-    try {
-      await this.backend.save(playerId, data);
-    } catch (err) {
-      logger.error('save.save.failed', err);
-    }
   }
 }
 
@@ -85,8 +137,7 @@ export class MemorySaveBackend implements SaveBackend {
   }
 
   async save(playerId: string, data: SaveData): Promise<void> {
-    // structuredClone keeps the in-memory copy immutable from outside edits.
-    this.store.set(playerId, JSON.parse(JSON.stringify(data)) as unknown);
+    this.store.set(playerId, deepClone(data) as unknown);
   }
 }
 
@@ -97,8 +148,17 @@ export class LocalStorageSaveBackend implements SaveBackend {
 
   async load(playerId: string): Promise<unknown | null> {
     if (typeof localStorage === 'undefined') return null;
-    const raw = localStorage.getItem(this.prefix + playerId);
-    return raw ? (JSON.parse(raw) as unknown) : null;
+    const key = this.prefix + playerId;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as unknown;
+    } catch (err) {
+      // Corrupted entry — wipe it so we don't re-trigger every load.
+      logger.error('save.localStorage.corrupt', { key, err: String(err) });
+      localStorage.removeItem(key);
+      return null;
+    }
   }
 
   async save(playerId: string, data: SaveData): Promise<void> {

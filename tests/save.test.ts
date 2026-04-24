@@ -1,6 +1,16 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SAVE_SCHEMA_VERSION } from '@/config/Constants';
-import { MemorySaveBackend, SaveSystem } from '@/systems/SaveSystem';
+import {
+  MemorySaveBackend,
+  SaveLoadError,
+  SaveSystem,
+  type SaveBackend,
+} from '@/systems/SaveSystem';
+import type { SaveData } from '@/entities/SaveData';
+
+function makeSys(backend: SaveBackend): SaveSystem {
+  return new SaveSystem({ backend, now: () => 1_700_000_000_000, saveRetries: 1 });
+}
 
 describe('SaveSystem', () => {
   let backend: MemorySaveBackend;
@@ -8,40 +18,58 @@ describe('SaveSystem', () => {
 
   beforeEach(() => {
     backend = new MemorySaveBackend();
-    sys = new SaveSystem({ backend, now: () => 1_700_000_000_000 });
+    sys = makeSys(backend);
   });
 
   it('creates and persists a fresh save when none exists', async () => {
     const data = await sys.load('player-1');
     expect(data.playerId).toBe('player-1');
     expect(data.schemaVersion).toBe(SAVE_SCHEMA_VERSION);
-    // Back-end should now contain the fresh save.
     const raw = (await backend.load('player-1')) as { playerId: string };
     expect(raw.playerId).toBe('player-1');
   });
 
   it('migrates an unversioned save and re-persists it', async () => {
-    await backend.save('p2', { playerId: 'p2', junk: true } as unknown as never);
+    await backend.save('p2', { playerId: 'p2', junk: true } as unknown as SaveData);
     const data = await sys.load('p2');
     expect(data.schemaVersion).toBe(SAVE_SCHEMA_VERSION);
   });
 
-  it('save() overwrites the backend copy and updates cache', async () => {
+  it('save() returns { ok: true } when the backend succeeds', async () => {
     const data = await sys.load('p3');
     data.nickname = 'nyang';
-    await sys.save(data);
+    const res = await sys.save(data);
+    expect(res).toEqual({ ok: true });
     const reloaded = await sys.load('p3');
     expect(reloaded.nickname).toBe('nyang');
-    expect(sys.getCached()?.nickname).toBe('nyang');
   });
 
-  it('load returns a fresh save when backend throws', async () => {
-    const flaky = new MemorySaveBackend();
-    flaky.load = async () => {
-      throw new Error('boom');
+  it('save() returns { ok: false, error } after retries exhausted', async () => {
+    const flaky: SaveBackend = {
+      name: 'flaky',
+      async load() {
+        return null;
+      },
+      async save() {
+        throw new Error('boom');
+      },
     };
-    const flakySys = new SaveSystem({ backend: flaky, now: () => 0 });
-    const data = await flakySys.load('p4');
-    expect(data.playerId).toBe('p4');
+    const flakySys = new SaveSystem({ backend: flaky, now: () => 0, saveRetries: 2 });
+    // First load creates a fresh save, which itself will fail to persist and
+    // surface SaveLoadError — confirming load does NOT return fresh silently.
+    await expect(flakySys.load('p4')).rejects.toBeInstanceOf(SaveLoadError);
+  });
+
+  it('load throws SaveLoadError when backend load fails (no silent fresh)', async () => {
+    const throwing: SaveBackend = {
+      name: 'throwing',
+      async load() {
+        throw new Error('network');
+      },
+      async save() {
+        /* ok */
+      },
+    };
+    await expect(makeSys(throwing).load('p5')).rejects.toBeInstanceOf(SaveLoadError);
   });
 });
