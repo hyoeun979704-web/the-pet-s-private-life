@@ -1,0 +1,41 @@
+{
+  "comment": "PART 7 MVP seed set. ROADMAP §법규: health/science questions need 2+ sources verified before beta. All answers below are commonly accepted pet-care facts; a domain editor should still review before launch.",
+  "questions": [
+    { "id": "q001", "category": "cat_care", "text": "고양이는 평균적으로 하루에 몇 시간을 잘까요?", "options": ["5~8시간", "9~12시간", "13~16시간", "19~22시간"], "correctIndex": 2, "explanation": "성묘는 보통 13~16시간을 잡니다." },
+    { "id": "q002", "category": "cat_care", "text": "고양이가 골골거리는 소리를 내는 이유가 아닌 것은?", "options": ["편안함", "자가 치유", "배고픔 또는 불안", "체온 조절"], "correctIndex": 3, "explanation": "골골송은 체온 조절과는 무관합니다." },
+    { "id": "q003", "category": "cat_care", "text": "고양이에게 먹이면 안 되는 음식은?", "options": ["닭가슴살", "양파", "삶은 계란", "사과(씨 제거)"], "correctIndex": 1, "explanation": "양파/마늘은 고양이에게 독성이 있습니다." },
+    { "id": "q004", "category": "cat_care", "text": "고양이의 수염은 주로 어떤 역할을 할까요?", "options": ["균형 감지", "공간 폭 측정", "체온 조절", "후각 강화"], "correctIndex": 1, "explanation": "수염으로 지나갈 수 있는 폭을 가늠합니다." },
+    { "id": "q005", "category": "cat_care", "text": "고양이가 '비비는' 행동의 주된 의미는?", "options": ["배고픔 표현", "영역 표시", "놀이 신청", "그루밍 요청"], "correctIndex": 1, "explanation": "얼굴의 페로몬 분비선으로 영역을 표시합니다." },
+    { "id": "q006", "category": "cat_care", "text": "고양이 중성화(거세/개복)의 이점이 아닌 것은?", "options": ["수명 연장", "행동 문제 감소", "성격이 완전히 바뀜", "특정 질환 예방"], "correctIndex": 2, "explanation": "성격은 크게 바뀌지 않으며 개체 차이가 있습니다." },
+
+    { "id": "q007", "category": "dog_care", "text": "강아지 초콜릿 섭취가 위험한 이유는?", "options": ["소화불량", "테오브로민 중독", "치아 부식", "털 색 변화"], "correctIndex": 1, "explanation": "테오브로민은 개에게 대사 장애를 일으킵니다." },
+    { "id": "q008", "category": "dog_care", "text": "강아지 산책 권장 빈도(소형견 성견 기준)는?", "options": ["주 1회", "주 2~3회", "매일 30분 이상", "월 1회"], "correctIndex": 2, "explanation": "대부분 견종은 매일 산책이 권장됩니다." },
+    { "id": "q009", "category": "dog_care", "text": "강아지가 꼬리를 흔든다는 것의 의미는?", "options": ["항상 기분이 좋다는 뜻", "상황에 따라 다름", "배가 고픈 것만을 의미", "항상 경계의 신호"], "correctIndex": 1, "explanation": "방향·속도·자세에 따라 의미가 다릅니다." },
+    { "id": "q010", "category": "dog_care", "text": "강아지 예방접종을 시작하는 일반적인 시기는?", "options": ["생후 1주", "생후 6~8주", "생후 6개월", "1돌 이후"], "correctIndex": 1, "explanation": "보통 생후 6~8주부터 접종 일정을 시작합니다." },
+    { "id": "q011", "category": "dog_care", "text": "강아지에게 적절하지 않은 장난감은?", "options": ["실리콘 인형", "나무 막대기", "로프 장난감", "라텍스 공"], "correctIndex": 1, "explanation": "쪼개지면 삼킬 수 있어 위험합니다." },
+    { "id": "q012", "category": "dog_care", "text": "포메라니안의 특징으로 맞는 것은?", "options": ["대형견", "더블 코트 소형견", "털이 없음", "반수생"], "correctIndex": 1, "explanation": "솜털 같은 이중 털을 가진 토이 그룹 소형견입니다." },
+    { "id": "q013", "category": "dog_care", "text": "코기의 원산지는?", "options": ["프랑스", "일본", "웨일스(영국)", "독일"], "correctIndex": 2, "explanation": "웰시 코기는 영국 웨일스 원산입니다." },
+
+    { "id": "q014", "category": "small_animal", "text": "햄스터는 주로 언제 활동할까요?", "options": ["낮(주행성)", "저녁/밤(야행성)", "아침만", "하루 종일"], "correctIndex": 1, "explanation": "대부분의 햄스터는 야행성/박명박모성입니다." },
+    { "id": "q015", "category": "small_animal", "text": "햄스터에게 적합한 바닥재가 아닌 것은?", "options": ["종이 베딩", "삼나무 대팻밥", "옥수수 껍질 베딩", "아스펜 대팻밥"], "correctIndex": 1, "explanation": "삼나무 대팻밥은 호흡기 자극을 줄 수 있습니다." },
+    { "id": "q016", "category": "small_animal", "text": "고슴도치의 주 먹이로 적합한 것은?", "options": ["과일 위주", "곡물 위주", "고양이 사료 혹은 전용 사료", "우유"], "correctIndex": 2, "explanation": "식충성이라 고단백 사료가 필요합니다." },
+    { "id": "q017", "category": "small_animal", "text": "고슴도치 적정 사육 온도는?", "options": ["5~10℃", "15~20℃", "22~28℃", "30~35℃"], "correctIndex": 2, "explanation": "추우면 동면 유사 증상으로 위험합니다." },
+    { "id": "q018", "category": "small_animal", "text": "햄스터 쳇바퀴의 최소 권장 지름은? (시리안 기준)", "options": ["12cm", "16cm", "20cm 이상", "8cm"], "correctIndex": 2, "explanation": "너무 작으면 척추에 무리를 줍니다." },
+
+    { "id": "q019", "category": "bird", "text": "왕관앵무의 머리 장식은 주로 어떤 역할?", "options": ["체온 조절만", "감정 표현", "구애만", "비행 보조"], "correctIndex": 1, "explanation": "놀람·호기심·편안함 등 감정을 나타냅니다." },
+    { "id": "q020", "category": "bird", "text": "사랑앵무(Budgerigar)의 원산지는?", "options": ["유럽", "호주", "북미", "아프리카"], "correctIndex": 1, "explanation": "호주 내륙 원산입니다." },
+    { "id": "q021", "category": "bird", "text": "앵무새에게 치명적인 공기 중 물질은?", "options": ["일반 먼지", "PTFE(테프론 과열 가스)", "수증기", "라벤더 향"], "correctIndex": 1, "explanation": "프라이팬 코팅 과열 시 발생하는 PTFE가 치명적입니다." },
+    { "id": "q022", "category": "bird", "text": "앵무새의 짝이 장기간 혼자 있을 때 흔한 문제는?", "options": ["시각 상실", "자해 깃털 뽑기", "청력 저하", "색맹"], "correctIndex": 1, "explanation": "스트레스로 인한 깃털 뽑기가 보고됩니다." },
+
+    { "id": "q023", "category": "general", "text": "국내 동물등록제 주요 대상은?", "options": ["모든 동물", "소·돼지", "반려견", "모든 조류"], "correctIndex": 2, "explanation": "현재 반려견이 주 등록 대상입니다(2024년 기준)." },
+    { "id": "q024", "category": "general", "text": "유기동물 입양을 고려할 때 먼저 해야 할 일은?", "options": ["바로 데려오기", "가족 합의와 환경 준비", "이름 짓기", "간식 사기"], "correctIndex": 1, "explanation": "가족 합의와 환경 점검이 최우선입니다." },
+    { "id": "q025", "category": "general", "text": "반려동물 건강검진 권장 주기(성체 기준)는?", "options": ["5년에 한 번", "월 1회", "연 1회 이상", "불필요"], "correctIndex": 2, "explanation": "노령은 반기, 성체는 연 1회가 권장됩니다." },
+    { "id": "q026", "category": "general", "text": "다음 중 반려동물에 일반적으로 독성이 있는 식물은?", "options": ["백합", "스파이더 플랜트", "보스턴 고사리", "파슬리(소량)"], "correctIndex": 0, "explanation": "백합은 특히 고양이에게 치명적입니다." },
+    { "id": "q027", "category": "general", "text": "여름 이동 시 차 안에 잠깐 두어도 되는 시간은?", "options": ["5분", "15분", "30분", "어떤 경우에도 금지"], "correctIndex": 3, "explanation": "차 내부 온도는 급격히 상승해 매우 위험합니다." },
+    { "id": "q028", "category": "general", "text": "반려동물 중성화의 공중보건적 이점은?", "options": ["개체수 관리", "감염병 전파", "공격성 증가", "에너지 소모 증가"], "correctIndex": 0, "explanation": "개체수 증가와 유기 문제 완화에 기여합니다." },
+    { "id": "q029", "category": "general", "text": "반려동물을 떠나보낸 뒤의 슬픔을 지칭하는 말은?", "options": ["펫 로스 증후군", "펫 코로나", "펫 피로감", "펫 다이어트"], "correctIndex": 0, "explanation": "Pet Loss Syndrome 이라 부릅니다." },
+    { "id": "q030", "category": "general", "text": "반려동물 비만 판단 기준 중 하나는?", "options": ["소리 크기", "BCS(체형 점수)", "털 색", "활동 시간"], "correctIndex": 1, "explanation": "Body Condition Score로 판단합니다." },
+    { "id": "q031", "category": "general", "text": "반려동물 미용 후 가장 먼저 확인할 것은?", "options": ["피부 손상 여부", "털 냄새", "발바닥 색", "체중"], "correctIndex": 0, "explanation": "클리퍼 화상·상처 여부를 우선 확인합니다." },
+    { "id": "q032", "category": "general", "text": "아기 고양이/강아지가 어미에게서 떨어질 수 있는 최소 시기는?", "options": ["생후 3주", "생후 8주 이상", "생후 1주", "생후 2주"], "correctIndex": 1, "explanation": "사회화·면역을 위해 최소 8주가 권장됩니다." }
+  ]
+}
