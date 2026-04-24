@@ -1,5 +1,5 @@
 import { SAVE_SCHEMA_VERSION } from '@/config/Constants';
-import type { SaveData } from '@/entities/SaveData';
+import { createInitialSaveData, type SaveData } from '@/entities/SaveData';
 
 export interface MigrationResult {
   data: SaveData;
@@ -50,7 +50,16 @@ export function migrate(raw: unknown): MigrationResult {
     );
   }
 
+  // v0 = data exists but has no schemaVersion (legacy or partial doc).
+  // Fill any missing fields from the fresh-save defaults so the result
+  // actually satisfies the SaveData contract.
   let current: LooseSave = loose;
+  if (fromVersion === 0) {
+    const playerId = typeof loose.playerId === 'string' ? loose.playerId : '';
+    const defaults = createInitialSaveData(playerId, 0) as unknown as LooseSave;
+    current = { ...defaults, ...loose };
+  }
+
   const applied: number[] = [];
   for (let next = fromVersion + 1; next <= SAVE_SCHEMA_VERSION; next += 1) {
     const migrator = MIGRATIONS[next];
@@ -61,7 +70,7 @@ export function migrate(raw: unknown): MigrationResult {
       // Migrating UP from an existing version and hitting a gap is a bug.
       throw new MigrationError(`no migrator registered for step ${next}`, fromVersion, next);
     }
-    // fromVersion === 0 with no migrator: just stamp the schema and move on.
+    // fromVersion === 0 with no migrator: defaults already merged above.
   }
 
   current.schemaVersion = SAVE_SCHEMA_VERSION;

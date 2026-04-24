@@ -9,11 +9,18 @@ import {
 } from '@/systems/MigrationSystem';
 
 describe('MigrationSystem', () => {
-  it('stamps schemaVersion on raw save with no version', () => {
-    const result = migrate({ playerId: 'p1' });
+  it('stamps schemaVersion and fills missing fields for v0 raws', () => {
+    const result = migrate({ playerId: 'p1', nickname: 'legacy' });
     expect(result.fromVersion).toBe(0);
     expect(result.toVersion).toBe(SAVE_SCHEMA_VERSION);
     expect(result.data.schemaVersion).toBe(SAVE_SCHEMA_VERSION);
+    // v0 fill: ensure required fields are present.
+    expect(result.data.resources).toBeDefined();
+    expect(result.data.rooms).toBeDefined();
+    expect(result.data.settings).toBeDefined();
+    // Existing fields are preserved.
+    expect(result.data.nickname).toBe('legacy');
+    expect(result.data.playerId).toBe('p1');
   });
 
   it('isCurrent returns true only for current schema', () => {
