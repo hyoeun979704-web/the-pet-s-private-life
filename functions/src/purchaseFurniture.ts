@@ -1,4 +1,5 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { INVENTORY_STORAGE_SLOTS } from './shared/economy';
 import { FURNITURE_PRICES } from './shared/furnitureCatalog';
 import { playerDocRef, requireAuthUid } from './util';
 
@@ -28,6 +29,12 @@ export const purchaseFurniture = onCall<Payload>(async (req) => {
   const totalSnack = (price.snack ?? 0) * quantity;
   const totalStarDust = (price.starDust ?? 0) * quantity;
 
+  // Reject zero-price 'purchases' — free grants should go through a
+  // different flow (e.g. initPlayer starter pack or event reward).
+  if (totalSnack === 0 && totalStarDust === 0) {
+    throw new HttpsError('invalid-argument', `no price set for ${furnitureDefId}`);
+  }
+
   const ref = playerDocRef(uid);
   return ref.firestore.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
@@ -45,6 +52,14 @@ export const purchaseFurniture = onCall<Payload>(async (req) => {
     }
 
     const idx = owned.findIndex((o) => o.defId === furnitureDefId);
+    const currentCount = idx >= 0 ? (owned[idx] as OwnedRow).count : 0;
+    if (currentCount + quantity > INVENTORY_STORAGE_SLOTS) {
+      throw new HttpsError(
+        'resource-exhausted',
+        `inventory cap reached for ${furnitureDefId} (${INVENTORY_STORAGE_SLOTS})`,
+      );
+    }
+
     const nextOwned = owned.slice();
     if (idx >= 0) {
       const current = nextOwned[idx] as OwnedRow;

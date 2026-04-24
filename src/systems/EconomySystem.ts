@@ -12,6 +12,7 @@ export interface GrantResult {
   ok: boolean;
   reason?:
     | 'unknown-source'
+    | 'key-not-allowed'
     | 'cap-exceeded'
     | 'daily-limit'
     | 'server-denied'
@@ -62,11 +63,10 @@ export class EconomySystem {
     if (!caps) return { ok: false, reason: 'unknown-source' };
 
     const capsMap = caps as Partial<Record<ResourceKey, number>>;
-    const overCap = (Object.keys(deltas) as ResourceKey[]).some((key) => {
-      const value = deltas[key] ?? 0;
-      const cap = capsMap[key];
-      return cap === undefined || value > cap;
-    });
+    const keys = Object.keys(deltas) as ResourceKey[];
+    const unknownKey = keys.find((key) => capsMap[key] === undefined);
+    if (unknownKey) return { ok: false, reason: 'key-not-allowed' };
+    const overCap = keys.some((key) => (deltas[key] ?? 0) > (capsMap[key] ?? 0));
     if (overCap) return { ok: false, reason: 'cap-exceeded' };
 
     const save = this.getSave();

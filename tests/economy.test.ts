@@ -45,7 +45,7 @@ describe('EconomySystem', () => {
     // block_puzzle only allows snack, not starDust
     const res = sys.canGrant('block_puzzle', { starDust: 1 });
     expect(res.ok).toBe(false);
-    expect(res.reason).toBe('cap-exceeded');
+    expect(res.reason).toBe('key-not-allowed');
   });
 
   it('canGrant rejects when the daily cap would be exceeded', () => {
