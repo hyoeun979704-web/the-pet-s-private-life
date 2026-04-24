@@ -13,7 +13,11 @@
   },
   "main": {
     "welcome": "어서 오세요, 집사님!",
-    "enter_placement": "배치하기"
+    "enter_placement": "배치하기",
+    "enter_block": "블록 퍼즐"
+  },
+  "block": {
+    "end": "끝내기"
   },
   "placement": {
     "selected": "선택됨",

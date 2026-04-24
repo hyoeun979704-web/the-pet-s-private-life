@@ -13,7 +13,11 @@
   },
   "main": {
     "welcome": "お帰りなさい、執事さん！",
-    "enter_placement": "配置する"
+    "enter_placement": "配置する",
+    "enter_block": "ブロックパズル"
+  },
+  "block": {
+    "end": "終了"
   },
   "placement": {
     "selected": "選択中",

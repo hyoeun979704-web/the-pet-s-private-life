@@ -13,7 +13,11 @@
   },
   "main": {
     "welcome": "Welcome back, keeper!",
-    "enter_placement": "Place furniture"
+    "enter_placement": "Place furniture",
+    "enter_block": "Block puzzle"
+  },
+  "block": {
+    "end": "End"
   },
   "placement": {
     "selected": "Selected",

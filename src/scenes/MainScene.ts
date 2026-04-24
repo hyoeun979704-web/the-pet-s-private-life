@@ -20,7 +20,7 @@ export class MainScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    const btn = this.add
+    const placementBtn = this.add
       .text(width / 2, height / 2 + 40, `[ ${i18n.t('main.enter_placement')} ]`, {
         fontFamily: DESIGN_TOKENS.font.family,
         fontSize: `${DESIGN_TOKENS.font.sizeLg}px`,
@@ -28,8 +28,17 @@ export class MainScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
+    placementBtn.on('pointerup', () => this.scene.start('PlacementDemoScene'));
 
-    btn.on('pointerup', () => this.scene.start('PlacementDemoScene'));
+    const blockBtn = this.add
+      .text(width / 2, height / 2 + 100, `[ ${i18n.t('main.enter_block', 'Block puzzle')} ]`, {
+        fontFamily: DESIGN_TOKENS.font.family,
+        fontSize: `${DESIGN_TOKENS.font.sizeLg}px`,
+        color: DESIGN_TOKENS.color.primaryDark,
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    blockBtn.on('pointerup', () => this.scene.start('BlockPuzzleScene'));
 
     onNetworkChange((online) => {
       if (!online) this.scene.start('OfflineScene');
