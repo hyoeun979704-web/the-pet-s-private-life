@@ -12,7 +12,12 @@
     "tip": "What is your pet up to right now?"
   },
   "main": {
-    "welcome": "Welcome back, keeper!"
+    "welcome": "Welcome back, keeper!",
+    "enter_placement": "Place furniture"
+  },
+  "placement": {
+    "selected": "Selected",
+    "title": "Furniture Placement"
   },
   "offline": {
     "title": "You're offline",

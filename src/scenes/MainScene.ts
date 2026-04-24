@@ -13,12 +13,23 @@ export class MainScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(DESIGN_TOKENS.color.bg);
 
     this.add
-      .text(width / 2, height / 2, i18n.t('main.welcome'), {
+      .text(width / 2, height / 2 - 60, i18n.t('main.welcome'), {
         fontFamily: DESIGN_TOKENS.font.family,
         fontSize: `${DESIGN_TOKENS.font.sizeXl}px`,
         color: DESIGN_TOKENS.color.textPrimary,
       })
       .setOrigin(0.5);
+
+    const btn = this.add
+      .text(width / 2, height / 2 + 40, `[ ${i18n.t('main.enter_placement')} ]`, {
+        fontFamily: DESIGN_TOKENS.font.family,
+        fontSize: `${DESIGN_TOKENS.font.sizeLg}px`,
+        color: DESIGN_TOKENS.color.primaryDark,
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    btn.on('pointerup', () => this.scene.start('PlacementDemoScene'));
 
     onNetworkChange((online) => {
       if (!online) this.scene.start('OfflineScene');

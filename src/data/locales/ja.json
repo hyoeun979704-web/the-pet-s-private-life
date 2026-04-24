@@ -12,7 +12,12 @@
     "tip": "ご主人さまは今何をしているでしょう？"
   },
   "main": {
-    "welcome": "お帰りなさい、執事さん！"
+    "welcome": "お帰りなさい、執事さん！",
+    "enter_placement": "配置する"
+  },
+  "placement": {
+    "selected": "選択中",
+    "title": "家具を配置"
   },
   "offline": {
     "title": "オフラインです",

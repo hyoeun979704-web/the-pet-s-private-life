@@ -71,7 +71,8 @@ describe('PlacementSystem', () => {
 
   it('remove returns item to inventory', () => {
     sys.place(RUG.id, { gx: 0, gy: 0 });
-    const [placed] = sys.getPlaced();
+    const placed = sys.getPlaced()[0];
+    if (!placed) throw new Error('expected a placed item');
     sys.remove(placed.instanceId);
     expect(sys.getPlaced()).toHaveLength(0);
     expect(sys.getInventoryCount(RUG.id)).toBe(3);
@@ -79,13 +80,14 @@ describe('PlacementSystem', () => {
 
   it('rotate cycles 0 -> 90 -> 180 -> 270 -> 0', () => {
     sys.place(LAMP.id, { gx: 0, gy: 0 });
-    const [p] = sys.getPlaced();
+    const p = sys.getPlaced()[0];
+    if (!p) throw new Error('expected a placed item');
     sys.rotate(p.instanceId);
-    expect(sys.getPlaced()[0].rotation).toBe(90);
+    expect(sys.getPlaced()[0]?.rotation).toBe(90);
     sys.rotate(p.instanceId);
     sys.rotate(p.instanceId);
     sys.rotate(p.instanceId);
-    expect(sys.getPlaced()[0].rotation).toBe(0);
+    expect(sys.getPlaced()[0]?.rotation).toBe(0);
   });
 
   it('undo reverts the last placement', () => {

@@ -3,6 +3,7 @@ import { BootScene } from '@/scenes/BootScene';
 import { LoadingScene } from '@/scenes/LoadingScene';
 import { MainScene } from '@/scenes/MainScene';
 import { OfflineScene } from '@/scenes/OfflineScene';
+import { PlacementDemoScene } from '@/scenes/PlacementDemoScene';
 import { DESIGN_TOKENS, GAME_META } from './Constants';
 
 export function createGameConfig(): Phaser.Types.Core.GameConfig {
@@ -25,6 +26,6 @@ export function createGameConfig(): Phaser.Types.Core.GameConfig {
       pixelArt: false,
       antialias: true,
     },
-    scene: [BootScene, LoadingScene, MainScene, OfflineScene],
+    scene: [BootScene, LoadingScene, MainScene, OfflineScene, PlacementDemoScene],
   };
 }
