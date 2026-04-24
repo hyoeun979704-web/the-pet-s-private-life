@@ -119,9 +119,6 @@ export const MAX_RESOURCE_GAIN_PER_SOURCE = {
 } as const;
 
 export type ResourceGainSource = keyof typeof MAX_RESOURCE_GAIN_PER_SOURCE;
-export const RESOURCE_GAIN_SOURCES = Object.keys(
-  MAX_RESOURCE_GAIN_PER_SOURCE,
-) as ResourceGainSource[];
 
 export const RESOURCE_KEYS = [
   'snack',
