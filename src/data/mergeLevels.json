@@ -1,0 +1,15 @@
+{
+  "comment": "Visual + reward data per merge level. starDust = starDust granted the first time this level is created in a session (then repeated grants follow the same table).",
+  "levels": [
+    { "level": 1,  "colorHex": "#E0E7FF", "starDust": 0 },
+    { "level": 2,  "colorHex": "#C7D2FE", "starDust": 0 },
+    { "level": 3,  "colorHex": "#A5B4FC", "starDust": 0 },
+    { "level": 4,  "colorHex": "#818CF8", "starDust": 0 },
+    { "level": 5,  "colorHex": "#6366F1", "starDust": 0 },
+    { "level": 6,  "colorHex": "#4F46E5", "starDust": 0 },
+    { "level": 7,  "colorHex": "#FCD34D", "starDust": 10 },
+    { "level": 8,  "colorHex": "#FBBF24", "starDust": 20 },
+    { "level": 9,  "colorHex": "#F59E0B", "starDust": 35 },
+    { "level": 10, "colorHex": "#D97706", "starDust": 50 }
+  ]
+}
