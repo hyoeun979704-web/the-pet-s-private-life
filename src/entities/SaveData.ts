@@ -1,4 +1,10 @@
-import { DEFAULT_LOCALE, SAVE_SCHEMA_VERSION, type SupportedLocale } from '@/config/Constants';
+import {
+  DEFAULT_GAME_SETTINGS,
+  DEFAULT_LOCALE,
+  SAVE_SCHEMA_VERSION,
+  type SupportedLocale,
+} from '@/config/Constants';
+import { nextMidnightMs } from '@/utils/DailyReset';
 import type { OwnedCharacter } from './Character';
 import type { PlacedFurniture } from './Furniture';
 import type { RoomId } from './Room';
@@ -71,7 +77,7 @@ export function createInitialSaveData(playerId: string, nowMs: number = Date.now
     characters: [],
     furniture: [],
     dailyLimits: {
-      resetAtMs: nowMs + 24 * 60 * 60 * 1000,
+      resetAtMs: nextMidnightMs(nowMs),
       snackEarned: 0,
       starDustEarned: 0,
       quizSessionsUsed: 0,
@@ -79,12 +85,7 @@ export function createInitialSaveData(playerId: string, nowMs: number = Date.now
     },
     gachaPity: 0,
     lastLoginMs: nowMs,
-    settings: {
-      bgmVolume: 0.6,
-      sfxVolume: 0.8,
-      largeFont: false,
-      reduceMotion: false,
-    },
+    settings: { ...DEFAULT_GAME_SETTINGS },
     locale: DEFAULT_LOCALE,
   };
 }

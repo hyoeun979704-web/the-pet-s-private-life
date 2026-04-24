@@ -87,3 +87,47 @@ export const ACCESSIBILITY = {
   minTapTargetDp: 44,
   textContrastRatio: 4.5,
 } as const;
+
+export const DEFAULT_GAME_SETTINGS = {
+  bgmVolume: 0.6,
+  sfxVolume: 0.8,
+  largeFont: false,
+  reduceMotion: false,
+} as const;
+
+/**
+ * Daily limit resets at local KST midnight. Offset from UTC in minutes.
+ * Do NOT change without coordinating with Cloud Functions (server-side
+ * midnight calc must match).
+ */
+export const DAILY_RESET_TIMEZONE_OFFSET_MIN = 9 * 60;
+
+/**
+ * Server-side cap for how many resources a single call to `addResources`
+ * may grant per source. Prevents client-side cheating where the client
+ * claims arbitrary rewards. Cloud Functions reads this from a shared
+ * module; keep in sync with `functions/src/shared/economy.ts`.
+ */
+export const MAX_RESOURCE_GAIN_PER_SOURCE = {
+  block_puzzle: { snack: 15 },
+  merge_game: { starDust: 50 },
+  quiz: { magicShard: 10, gachaTicket: 1 },
+  daily_mission: { snack: 30, starDust: 10 },
+  level_up: { magicStone: 3, gachaTicket: 1 },
+  login_bonus: { snack: 20, starDust: 5, magicStone: 1 },
+  ad_reward: { snack: 10, starDust: 5 },
+} as const;
+
+export type ResourceGainSource = keyof typeof MAX_RESOURCE_GAIN_PER_SOURCE;
+export const RESOURCE_GAIN_SOURCES = Object.keys(
+  MAX_RESOURCE_GAIN_PER_SOURCE,
+) as ResourceGainSource[];
+
+export const RESOURCE_KEYS = [
+  'snack',
+  'starDust',
+  'magicStone',
+  'magicShard',
+  'gachaTicket',
+] as const;
+export type ResourceKey = (typeof RESOURCE_KEYS)[number];
