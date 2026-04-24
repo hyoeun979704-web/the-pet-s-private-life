@@ -1,6 +1,13 @@
 import Phaser from 'phaser';
 import { DESIGN_TOKENS, PLACEMENT_CONFIG } from '@/config/Constants';
+import charactersData from '@/data/characters.json';
 import furnitureData from '@/data/furniture.json';
+import type { CharacterDef, MoodState } from '@/entities/Character';
+import {
+  createActor,
+  stepActor,
+  type ActorState,
+} from '@/entities/CharacterActor';
 import {
   rotatedFootprint,
   type FurnitureDef,
@@ -8,6 +15,7 @@ import {
   type Rotation,
 } from '@/entities/Furniture';
 import type { RoomDef } from '@/entities/Room';
+import { CharacterSystem } from '@/systems/CharacterSystem';
 import { PlacementSystem } from '@/systems/PlacementSystem';
 import { compareDepth } from '@/utils/DepthSort';
 import { gridToScreen, screenToGrid, type GridPos } from '@/utils/IsometricUtil';
@@ -18,6 +26,14 @@ const TILE_H = PLACEMENT_CONFIG.tilePx / 2;
 
 function parseHex(hex: string): number {
   return Number.parseInt(hex.replace('#', ''), 16);
+}
+
+function moodAlpha(mood: MoodState): number {
+  switch (mood) {
+    case 'sleep': return 0.35;
+    case 'tired': return 0.6;
+    default: return 1;
+  }
 }
 
 export class PlacementDemoScene extends Phaser.Scene {
@@ -43,6 +59,14 @@ export class PlacementDemoScene extends Phaser.Scene {
 
   private statusText!: Phaser.GameObjects.Text;
 
+  private characters!: CharacterSystem;
+
+  private actors: ActorState[] = [];
+
+  private actorSprites: Map<string, Phaser.GameObjects.Arc> = new Map();
+
+  private charactersLayer!: Phaser.GameObjects.Container;
+
   constructor() {
     super({ key: 'PlacementDemoScene' });
   }
@@ -64,11 +88,70 @@ export class PlacementDemoScene extends Phaser.Scene {
 
     this.gridLayer = this.add.graphics();
     this.itemsLayer = this.add.container(0, 0);
+    this.charactersLayer = this.add.container(0, 0);
     this.drawGrid(room);
     this.buildPalette(defs);
     this.buildHud();
     this.bindInput();
     this.redrawItems();
+    this.initCharacters(room);
+  }
+
+  override update(): void {
+    if (!this.characters) return;
+    const room = this.system.getRoom();
+    const env = {
+      roomW: room.gridWidth,
+      roomH: room.gridHeight,
+      now: () => this.time.now,
+      rand: () => Math.random(),
+      fatigueOf: (defId: string) => {
+        const owned = this.characters.getOwned().find((o) => o.defId === defId);
+        return owned?.fatigue ?? 0;
+      },
+    };
+    this.actors = this.actors.map((a) => stepActor(a, env));
+    this.actors.forEach((a) => this.renderActor(a));
+  }
+
+  private initCharacters(room: RoomDef): void {
+    const defs = (charactersData.characters as unknown as CharacterDef[]).slice(0, 3);
+    this.characters = new CharacterSystem(defs, { now: () => this.time.now });
+    defs.forEach((def, idx) => {
+      this.characters.acquire(def.id);
+      const pos = {
+        gx: Math.floor(room.gridWidth / 2) + idx - 1,
+        gy: Math.floor(room.gridHeight / 2),
+      };
+      this.actors.push(createActor(def.id, pos, this.time.now));
+      const { x, y } = gridToScreen(pos, this.originX, this.originY);
+      const sprite = this.add.circle(x, y + TILE_H / 2, 14, parseHex(def.colorHex));
+      sprite.setStrokeStyle(2, parseHex(DESIGN_TOKENS.color.textPrimary));
+      sprite.setInteractive({ useHandCursor: true });
+      sprite.on('pointerup', () => this.onCharacterTap(def.id, sprite));
+      this.actorSprites.set(def.id, sprite);
+      this.charactersLayer.add(sprite);
+    });
+  }
+
+  private renderActor(actor: ActorState): void {
+    const sprite = this.actorSprites.get(actor.defId);
+    if (!sprite) return;
+    const { x, y } = gridToScreen(actor.pos, this.originX, this.originY);
+    sprite.x = x;
+    sprite.y = y + TILE_H / 2;
+    sprite.setAlpha(moodAlpha(actor.mood));
+  }
+
+  private onCharacterTap(defId: string, sprite: Phaser.GameObjects.Arc): void {
+    this.characters.touch(defId);
+    this.tweens.add({
+      targets: sprite,
+      scale: { from: 1.0, to: 1.25 },
+      duration: 120,
+      yoyo: true,
+      ease: 'Quad.out',
+    });
   }
 
   private drawGrid(room: RoomDef): void {
