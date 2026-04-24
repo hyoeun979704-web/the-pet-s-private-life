@@ -284,23 +284,106 @@ interface Character {
 }
 ```
 
-17종 목록은 v1과 동일: 고양이 5 / 강아지 6 / 햄스터 3 / 고슴도치 2 / 앵무새 2.
+### 17종 상세 (기획 초안 — 등급은 PART 2 착수 직전 확정)
+
+| 종 | 품종 (`id`) | 등급 | 비고 |
+|---|---|---|---|
+| 🐱 고양이 | 먼치킨 (`cat_munchkin`) | normal | 시작 캐릭터 후보 |
+| 🐱 고양이 | 페르시안 (`cat_persian`) | normal | |
+| 🐱 고양이 | 스코티시폴드 (`cat_scottish_fold`) | rare | |
+| 🐱 고양이 | 러시안블루 (`cat_russian_blue`) | rare | |
+| 🐱 고양이 | 샴 (`cat_siamese`) | legendary | |
+| 🐶 강아지 | 비숑프리제 (`dog_bichon`) | normal | 시작 캐릭터 후보 |
+| 🐶 강아지 | 포메라니안 (`dog_pomeranian`) | normal | |
+| 🐶 강아지 | 말티즈 (`dog_maltese`) | normal | |
+| 🐶 강아지 | 웰시코기 (`dog_welsh_corgi`) | rare | |
+| 🐶 강아지 | 시바견 (`dog_shiba`) | rare | |
+| 🐶 강아지 | 골든리트리버 (`dog_golden_retriever`) | legendary | |
+| 🐹 햄스터 | 골든햄스터 (`ham_golden`) | normal | |
+| 🐹 햄스터 | 로보로브스키 (`ham_roborovski`) | rare | |
+| 🐹 햄스터 | 드워프햄스터 (`ham_dwarf`) | rare | |
+| 🦔 고슴도치 | 일반 (`hedge_common`) | rare | |
+| 🦔 고슴도치 | 알비노 (`hedge_albino`) | legendary | |
+| 🦜 앵무새 | 왕관앵무 (`parrot_cockatiel`) | rare | |
+| 🦜 앵무새 | 사랑앵무 (`parrot_budgerigar`) | legendary | |
+
+> 합계 18종으로 표기됐으나 런칭 기준은 17종. **드워프햄스터 or 페르시안 중 1종을 후속 업데이트로 이월**합니다. 데이터상 먼저 구현해두고 JSON 플래그로 숨기는 방식 권장.
 
 ---
 
-## 🏠 배치 시스템 / 🏘 방 확장 시스템
+## 🏠 배치 시스템
 
-v1과 동일 (타일 64px, iso 30°, 겹치기 불가, 회전 가능, 되돌리기 1회, 창고 허용).
-방 확장 조건도 v1 동일 (거실 해금 → 침실 Lv.4 → 주방 준비중).
+```typescript
+const PLACEMENT_CONFIG = {
+  tilePx: 64,
+  isoAngleDeg: 30,
+  allowOverlap: false,
+  rotationSteps: 4,        // 0°, 90°, 180°, 270°
+  undoDepth: 1,            // 되돌리기 1회
+  storageSlots: 100,       // 창고 한도
+  snapToGrid: true,
+};
+```
+
+**규칙**:
+- Y축 기준 depth sort (`y + height` 합으로 정렬 → `utils/DepthSort.ts`).
+- 드래그 중에는 반투명 고스트 표시, 유효 위치면 `#88FF88` 타일 하이라이트.
+- 벽·문 가구는 벽면 타일에만 snap.
+- 배치 완료 시 `resource_spend` 이벤트 전송.
+
+---
+
+## 🏘 방 확장 시스템
+
+| 방 | 해금 조건 | 확장 비용 |
+|---|---|---|
+| 거실 (`room_living`) | 시작부터 해금 | — |
+| 침실 (`room_bedroom`) | 플레이어 Lv.4 도달 | `starDust: 200` |
+| 주방 (`room_kitchen`) | **정식 출시 후 업데이트** (앱 내 "준비중" 배지) | TBD |
+
+> 확장 시 `room_expand` 분석 이벤트 전송. `cozy_score`는 "배치된 가구 희귀도 합 × 테마 일치 계수 × 0.1"로 계산 (상세는 PART 4에서 확정).
 
 ---
 
 ## 🎮 미니게임 3종
 
-v1과 동일. 단, **각 미니게임 시작/종료 시 분석 이벤트 필수**:
+### 1) 블록 퍼즐 (`BlockPuzzleScene`)
+
+| 항목 | 값 |
+|---|---|
+| 보드 크기 | 10 × 10 |
+| 블록 종류 | 3색 (간식 모양) |
+| 클리어 조건 | 가로/세로 1줄 전체 채우기 |
+| 세션 길이 | 3분 |
+| 피로도 소모 | 1 |
+| 보상 | 줄당 `snack: 5`, 콤보 2줄 이상 시 `snack: 15` |
+
+### 2) 머지 (`MergeGameScene`)
+
+| 항목 | 값 |
+|---|---|
+| 보드 크기 | 5 × 5 |
+| 머지 단계 | 10단계 (Lv.1~10) |
+| 요소 | 별먼지 아이콘 (색상으로 단계 구분) |
+| 클리어 조건 | Lv.7 이상 생성 시 즉시 보상 |
+| 세션 길이 | 5분 |
+| 피로도 소모 | 2 |
+| 보상 | Lv.7: `starDust: 10` / Lv.8: 20 / Lv.9: 35 / Lv.10: 50 |
+
+### 3) 퀴즈 (`QuizScene`)
+
+| 항목 | 값 |
+|---|---|
+| 문항 수 | 10문항/세션 |
+| 제한 시간 | 문항당 15초 |
+| 오답 허용 | 최대 3회 |
+| 피로도 소모 | 4 |
+| 보상 | 정답당 `magicShard: 1`, 만점 시 `gachaTicket: 1` |
+| 일일 세션 | 1회 (광고 시청 시 +1) |
+
+### 공통 규약 — **각 미니게임 시작/종료 시 분석 이벤트 필수**
 
 ```typescript
-// 예시
 analytics.log('minigame_start', { type: 'block_puzzle', fatigue_before });
 analytics.log('minigame_end', {
   type: 'block_puzzle',
@@ -618,19 +701,63 @@ jobs:
 
 ## 🎬 튜토리얼 구조 (5씬)
 
-v1과 동일. 각 씬 진입/종료 시 `tutorial_step` 이벤트 전송.
+| # | 씬 | 목표 | 스킵 가능 |
+|---|---|---|---|
+| S1 | 환영 & 닉네임 | 닉네임 입력 (2~10자, 욕설 필터) | ❌ |
+| S2 | 첫 주인님 등장 | 랜덤 `normal` 캐릭터 1종 지급 + 이름 짓기 | ❌ |
+| S3 | 가구 배치 튜토 | 창고에서 기본 가구 1개 → 거실에 배치 | ❌ |
+| S4 | 미니게임 체험 | 블록 퍼즐 1회 강제 플레이 (피로도 소모 없음) | ❌ |
+| S5 | 도감 & 메인 진입 | 도감·상점·가챠 버튼 위치 오버레이 안내 | ✅ (S4 완료 시) |
+
+**규약**: 각 씬 진입·종료 시 `tutorial_step` 이벤트 전송. S5 완료 시 `tutorial_complete` 이벤트 + `total_sec` 기록.
 
 ---
 
 ## 📱 로딩 화면
 
-v1과 동일. TMI 텍스트는 `loading_texts.json`에서 로드, 미보유 캐릭터는 실루엣.
+- 배경: 랜덤 주인님 일러스트 1장. **미보유 캐릭터는 실루엣** (`filter: brightness(0)` + 알파 0.6).
+- 하단 TMI 텍스트: `loading_texts.json`에서 랜덤 1줄. 3초마다 교체.
+- 진행바: 에셋 로딩 진행률 기반 (Phaser `LoaderPlugin.PROGRESS` 이벤트).
+- 최소 노출 시간 **1.2초** (너무 빠른 로딩 시에도 깜빡임 방지).
+- 최대 노출 시간 **10초** 초과 시 "네트워크 확인" 토스트 표시.
 
 ---
 
 ## 🎨 디자인 시스템
 
-v1과 동일한 디자인 토큰 유지. 단, **모든 색상 HEX는 `Constants.ts`의 `DESIGN_TOKENS`에서만 참조**.
+### 디자인 토큰 (초안 — PART 0에서 `Constants.ts`로 이식)
+
+```typescript
+export const DESIGN_TOKENS = {
+  color: {
+    primary:        '#FFC8DD', // 메인 핑크
+    primaryDark:    '#E8A4BF',
+    secondary:      '#FAEDCB', // 크림
+    accent:         '#A0C4FF', // 하늘색
+    success:        '#B9FBC0',
+    danger:         '#FFADAD',
+    textPrimary:    '#3A2E2A',
+    textSecondary:  '#7A6A66',
+    bg:             '#FFF7F2',
+    bgAlt:          '#F3E8E2',
+  },
+  radius: { sm: 8, md: 12, lg: 20, pill: 999 },
+  spacing: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 },
+  font: {
+    family: '"Pretendard", "Noto Sans KR", sans-serif',
+    sizeSm: 14, sizeMd: 18, sizeLg: 24, sizeXl: 32,
+  },
+  shadow: {
+    soft:   '0 4px 12px rgba(58, 46, 42, 0.08)',
+    medium: '0 8px 20px rgba(58, 46, 42, 0.12)',
+  },
+} as const;
+```
+
+**규칙**:
+- **모든 색상 HEX는 위 토큰에서만 참조**. 컴포넌트 인라인 HEX 금지.
+- 텍스트 대비는 `textPrimary` on `bg` 기준으로 WCAG AA(4.5:1) 충족 선에서 조정.
+- "큰 글자" 옵션 활성화 시 `font.size*` 에 1.2 곱.
 
 ---
 
