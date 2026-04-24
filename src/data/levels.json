@@ -1,0 +1,37 @@
+{
+  "comment": "Cumulative exp required to REACH each level. Index N = level N+1. Last entry caps progression for MVP; extend before alpha.",
+  "expToReach": [
+    0,
+    100,
+    250,
+    450,
+    700,
+    1000,
+    1400,
+    1900,
+    2500,
+    3200,
+    4000,
+    5000,
+    6200,
+    7600,
+    9200,
+    11000,
+    13000,
+    15500,
+    18500,
+    22000
+  ],
+  "levelUpRewards": {
+    "1":  { "snack": 0,   "starDust": 0,  "magicStone": 0,  "gachaTicket": 0 },
+    "2":  { "snack": 50,  "starDust": 5,  "magicStone": 0,  "gachaTicket": 0 },
+    "3":  { "snack": 100, "starDust": 10, "magicStone": 1,  "gachaTicket": 0 },
+    "4":  { "snack": 150, "starDust": 15, "magicStone": 1,  "gachaTicket": 1 },
+    "5":  { "snack": 200, "starDust": 20, "magicStone": 2,  "gachaTicket": 0 },
+    "6":  { "snack": 250, "starDust": 25, "magicStone": 2,  "gachaTicket": 0 },
+    "7":  { "snack": 300, "starDust": 30, "magicStone": 2,  "gachaTicket": 1 },
+    "8":  { "snack": 350, "starDust": 35, "magicStone": 3,  "gachaTicket": 0 },
+    "9":  { "snack": 400, "starDust": 40, "magicStone": 3,  "gachaTicket": 0 },
+    "10": { "snack": 500, "starDust": 50, "magicStone": 3,  "gachaTicket": 1 }
+  }
+}
