@@ -1,5 +1,5 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
-import { GACHA } from './shared/economy';
+import { FATIGUE_MAX_BY_GRADE, GACHA } from './shared/economy';
 import { GACHA_POOL, type GachaGrade } from './shared/gachaPool';
 import { playerDocRef, requireAuthUid } from './util';
 
@@ -67,7 +67,11 @@ export const rollGacha = onCall(async (req) => {
     } else {
       updates.characters = [
         ...owned,
-        { defId, fatigue: 0, lastInteractAt: Date.now() },
+        {
+          defId,
+          fatigue: FATIGUE_MAX_BY_GRADE[grade],
+          lastInteractAt: Date.now(),
+        },
       ];
     }
 

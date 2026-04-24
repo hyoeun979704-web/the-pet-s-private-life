@@ -47,5 +47,17 @@ export const GACHA = {
   rates: { normal: 0.7, rare: 0.25, legendary: 0.05 },
 } as const;
 
+/**
+ * Fatigue max by character grade. Kept here (not in characters.json) because
+ * the server must assign initial fatigue without loading the full catalog.
+ * Sync guard: tests/gacha-pool-sync.test.ts asserts every character's
+ * fatigueMax matches its grade bucket below.
+ */
+export const FATIGUE_MAX_BY_GRADE = {
+  normal: 10,
+  rare: 12,
+  legendary: 15,
+} as const;
+
 /** Cap used when returning placed furniture to the inventory. */
 export const INVENTORY_STORAGE_SLOTS = 100;

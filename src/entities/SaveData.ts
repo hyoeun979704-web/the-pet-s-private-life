@@ -6,8 +6,7 @@ import {
 } from '@/config/Constants';
 import { nextMidnightMs } from '@/utils/DailyReset';
 import type { OwnedCharacter } from './Character';
-import type { PlacedFurniture } from './Furniture';
-import type { RoomId } from './Room';
+import type { RoomState } from './Room';
 
 export interface Resources {
   snack: number;
@@ -37,11 +36,6 @@ export interface OwnedFurniture {
   count: number;
 }
 
-export interface RoomSaveState {
-  id: RoomId;
-  placed: PlacedFurniture[];
-}
-
 export interface SaveData {
   schemaVersion: number;
   playerId: string;
@@ -49,7 +43,7 @@ export interface SaveData {
   level: number;
   exp: number;
   resources: Resources;
-  rooms: RoomSaveState[];
+  rooms: RoomState[];
   characters: OwnedCharacter[];
   furniture: OwnedFurniture[];
   dailyLimits: DailyLimitTracker;

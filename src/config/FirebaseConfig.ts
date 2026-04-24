@@ -17,6 +17,7 @@ import {
   setDoc,
   type Firestore,
 } from 'firebase/firestore';
+import { getFunctions, httpsCallable, type Functions } from 'firebase/functions';
 import type { SaveData } from '@/entities/SaveData';
 import type { SaveBackend } from '@/systems/SaveSystem';
 import { logger } from '@/utils/Logger';
@@ -26,6 +27,7 @@ let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let analytics: Analytics | null = null;
 let firestore: Firestore | null = null;
+let functions: Functions | null = null;
 
 export async function initFirebase(): Promise<void> {
   if (!firebaseConfigured()) {
@@ -36,6 +38,7 @@ export async function initFirebase(): Promise<void> {
     app = initializeApp(ENV.firebase);
     auth = getAuth(app);
     firestore = getFirestore(app);
+    functions = getFunctions(app);
     const supported = await isSupported();
     if (supported) {
       analytics = getAnalytics(app);
@@ -127,10 +130,38 @@ export async function signInOrLinkGoogle(): Promise<GoogleAuthResult> {
   }
 }
 
+/**
+ * Calls the `initPlayer` Cloud Function to create the /players/{uid} doc
+ * on first login. Idempotent — safe to call on every launch.
+ */
+export async function ensurePlayerDoc(): Promise<{ ok: boolean; created?: boolean }> {
+  if (!functions) return { ok: false };
+  try {
+    const call = httpsCallable<unknown, { ok: boolean; created: boolean }>(
+      functions,
+      'initPlayer',
+    );
+    const res = await call({});
+    return res.data;
+  } catch (err) {
+    logger.error('firebase.initPlayer.failed', err);
+    return { ok: false };
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Firestore SaveBackend
 // -----------------------------------------------------------------------------
 
+/**
+ * Read-only in production. Production security rules deny all client writes
+ * to /players/{uid}; any `save()` call will throw. All mutations MUST go
+ * through Cloud Functions (addResources, consumeFatigue, rollGacha).
+ *
+ * The `save()` path is kept for:
+ *   - Emulator-based integration tests that seed a doc.
+ *   - Dev fallback when rules are relaxed locally.
+ */
 export class FirestoreSaveBackend implements SaveBackend {
   name = 'firestore';
 
@@ -141,10 +172,9 @@ export class FirestoreSaveBackend implements SaveBackend {
   }
 
   async save(playerId: string, data: SaveData): Promise<void> {
-    if (!firestore) return;
-    // NOTE: Firestore security rules reject client writes to /players/{uid}.
-    // This path exists for seeding / dev-emulator only. Production mutations
-    // MUST go through Cloud Functions (addResources, consumeFatigue, rollGacha).
+    if (!firestore) {
+      throw new Error('firestore not initialized');
+    }
     await setDoc(doc(firestore, 'players', playerId), data as unknown as Record<string, unknown>);
   }
 }

@@ -1,10 +1,15 @@
 /* eslint-disable import/no-relative-packages */
 import { describe, it, expect } from 'vitest';
 import charactersData from '@/data/characters.json';
+import { FATIGUE_MAX_BY_GRADE } from '../functions/src/shared/economy';
 import { GACHA_POOL } from '../functions/src/shared/gachaPool';
 /* eslint-enable import/no-relative-packages */
 
-type CharacterRow = { id: string; grade: 'normal' | 'rare' | 'legendary' };
+type CharacterRow = {
+  id: string;
+  grade: 'normal' | 'rare' | 'legendary';
+  fatigueMax: number;
+};
 
 const rows = charactersData.characters as unknown as CharacterRow[];
 
@@ -35,6 +40,12 @@ describe('gacha-pool-sync: client characters.json vs functions/shared', () => {
     rows.forEach((r) => {
       if (r.grade === 'rare') expect(pooledRare.has(r.id), `rare ${r.id}`).toBe(true);
       if (r.grade === 'legendary') expect(pooledLeg.has(r.id), `legendary ${r.id}`).toBe(true);
+    });
+  });
+
+  it('FATIGUE_MAX_BY_GRADE matches every character.fatigueMax', () => {
+    rows.forEach((r) => {
+      expect(r.fatigueMax, `${r.id} fatigueMax`).toBe(FATIGUE_MAX_BY_GRADE[r.grade]);
     });
   });
 });
