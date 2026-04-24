@@ -290,7 +290,7 @@ export class BlockPuzzleScene extends Phaser.Scene {
       this.sessionSnack += reward.snack;
     }
 
-    container.destroy();
+    // buildTray() destroys + rebuilds every slot, including the dragged one.
     this.drawBoard();
     this.buildTray();
     this.scoreText.setText(`🍖 ${this.sessionSnack}`);
