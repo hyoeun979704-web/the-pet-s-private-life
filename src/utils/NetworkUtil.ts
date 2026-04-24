@@ -2,14 +2,14 @@ type Listener = (online: boolean) => void;
 
 const listeners: Set<Listener> = new Set();
 
-function notify(): void {
-  const online = isOnline();
-  listeners.forEach((fn) => fn(online));
-}
-
 export function isOnline(): boolean {
   if (typeof navigator === 'undefined') return true;
   return navigator.onLine !== false;
+}
+
+function notify(): void {
+  const online = isOnline();
+  listeners.forEach((fn) => fn(online));
 }
 
 export function onNetworkChange(listener: Listener): () => void {

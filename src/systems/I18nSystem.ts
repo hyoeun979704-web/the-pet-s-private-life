@@ -26,14 +26,12 @@ class I18nSystem {
 
   t(key: string, fallback?: string): string {
     const parts = key.split('.');
-    let cursor: unknown = this.dict;
-    for (const p of parts) {
-      if (cursor && typeof cursor === 'object' && p in (cursor as Dict)) {
-        cursor = (cursor as Dict)[p];
-      } else {
-        return fallback ?? key;
+    const cursor = parts.reduce<unknown>((acc, p) => {
+      if (acc && typeof acc === 'object' && p in (acc as Dict)) {
+        return (acc as Dict)[p];
       }
-    }
+      return undefined;
+    }, this.dict);
     return typeof cursor === 'string' ? cursor : (fallback ?? key);
   }
 

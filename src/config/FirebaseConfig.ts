@@ -1,8 +1,8 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, signInAnonymously, type Auth } from 'firebase/auth';
 import { getAnalytics, isSupported, type Analytics } from 'firebase/analytics';
-import { ENV, firebaseConfigured } from './Env';
 import { logger } from '@/utils/Logger';
+import { ENV, firebaseConfigured } from './Env';
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
