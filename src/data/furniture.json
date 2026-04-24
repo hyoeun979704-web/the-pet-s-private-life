@@ -62,14 +62,16 @@
       "nameKey": "rooms.living",
       "gridWidth": 8,
       "gridHeight": 8,
-      "unlockLevel": 1
+      "unlockLevel": 1,
+      "unlockCost": {}
     },
     {
       "id": "room_bedroom",
       "nameKey": "rooms.bedroom",
       "gridWidth": 6,
       "gridHeight": 6,
-      "unlockLevel": 4
+      "unlockLevel": 4,
+      "unlockCost": { "starDust": 200 }
     }
   ]
 }

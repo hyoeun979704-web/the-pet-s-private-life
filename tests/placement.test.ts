@@ -9,6 +9,7 @@ const ROOM: RoomDef = {
   gridWidth: 5,
   gridHeight: 5,
   unlockLevel: 1,
+  unlockCost: {},
 };
 
 const RUG: FurnitureDef = {
