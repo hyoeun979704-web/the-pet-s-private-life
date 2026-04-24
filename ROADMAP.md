@@ -219,3 +219,206 @@ if (magicShard >= 3 && starDust >= 3) {
 > **⚠️ 보안 주의**: 위 로직은 UI 반영용이며, **실제 증감은 반드시 Cloud Functions에서 검증**합니다. 클라이언트에서 Firestore에 자원을 직접 write하는 것은 금지.
 
 ---
+
+## 🐾 피로도 시스템
+
+```typescript
+const FATIGUE_CONFIG = {
+  base: 10,
+  levelBonus: 1,
+  recoveryMinutes: 30,
+  costs: {
+    blockPuzzle: 1,
+    mergeGame: 2,
+    quiz: 4,
+  },
+};
+
+const FATIGUE_ITEMS = {
+  smallSnack:   { restore: 2,  cost: { starDust: 10 } },
+  niceSnack:    { restore: 5,  cost: { starDust: 20 } },
+  specialSnack: { restore: 10, cost: { starDust: 40 } },
+};
+
+const AD_FATIGUE_RESTORE = 3; // 하루 3회
+```
+
+---
+
+## 🎰 가챠 시스템
+
+```typescript
+const GACHA_CONFIG = {
+  cost: { magicStone: 1 },
+  pityLimit: 20,            // 20회 천장 (희귀 이상 확정)
+  rates: {
+    normal:    0.70,
+    rare:      0.25,
+    legendary: 0.05,
+  },
+  duplicate: 'shard',
+};
+```
+
+> **법적 고지**: 구글 플레이/한국 확률형 아이템 정보공개 정책에 따라 **확률표는 게임 내 메뉴에 반드시 노출**합니다. PART 7에서 `GachaRatesScene` 구현 필수.
+
+---
+
+## 🐱 캐릭터 데이터 구조 (17종)
+
+```typescript
+interface Character {
+  id: string;
+  nameKo: string;
+  species: 'cat' | 'dog' | 'hamster' | 'hedgehog' | 'parrot';
+  breed: string;
+  grade: 'normal' | 'rare' | 'legendary';
+  fatigueMax: number;             // normal:10, rare:12, legendary:15
+  fatigueRecoveryBonus: number;
+  tmi: string;                    // 도감 TMI (플레이스홀더)
+  personality: string;
+  idleAnim: string;
+  sleepAnim: string;
+  tiredAnim: string;
+  spriteSheet: string;
+}
+```
+
+17종 목록은 v1과 동일: 고양이 5 / 강아지 6 / 햄스터 3 / 고슴도치 2 / 앵무새 2.
+
+---
+
+## 🏠 배치 시스템 / 🏘 방 확장 시스템
+
+v1과 동일 (타일 64px, iso 30°, 겹치기 불가, 회전 가능, 되돌리기 1회, 창고 허용).
+방 확장 조건도 v1 동일 (거실 해금 → 침실 Lv.4 → 주방 준비중).
+
+---
+
+## 🎮 미니게임 3종
+
+v1과 동일. 단, **각 미니게임 시작/종료 시 분석 이벤트 필수**:
+
+```typescript
+// 예시
+analytics.log('minigame_start', { type: 'block_puzzle', fatigue_before });
+analytics.log('minigame_end', {
+  type: 'block_puzzle',
+  score, duration_sec, reward_snack, cleared: true,
+});
+```
+
+---
+
+## 📢 광고 시스템
+
+v1 정책 유지(보상형만, 강제 없음, 실패 시 무보상).
+추가 규약:
+- **광고 필터**: AdMob 설정에서 `alcohol`, `dating`, `gambling`, `sexual` 카테고리 차단
+- **광고 실패 fallback**: 3회 연속 로드 실패 시 "잠시 후 다시 시도해주세요" 토스트
+
+---
+
+## 🛡 보안·개인정보·법규 체크리스트
+
+출시 전에 모두 체크.
+
+- [ ] Google Play 콘텐츠 등급: 전체이용가 대상 질의서 제출
+- [ ] AdMob 광고 카테고리 필터링 적용
+- [ ] 개인정보처리방침 URL 준비 (한국어/영어)
+- [ ] 14세 미만 접근 정책 (KISA 개인정보보호법 준수)
+- [ ] **Firestore 보안 규칙**: 클라이언트 자원 증감 write 차단 → Cloud Functions 경유
+- [ ] 계정 삭제 요청 플로우 (Play 콘솔 필수)
+- [ ] 확률형 아이템 확률 공시 (게임 내 + 스토어 설명)
+- [ ] 퀴즈 "동물 건강/과학" 문항: 출처 2곳 이상 교차검증 후 배포
+- [ ] 결제: SKU 정의 → 테스트 트랙 검증 → 영수증 서버 검증
+
+### Firestore 보안 규칙 초안
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /players/{uid} {
+      // 본인 문서만 읽기
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      // 클라이언트는 직접 write 불가 (자원/레벨/경험치/가챠 등 모두 서버 경유)
+      allow write: if false;
+    }
+
+    // 공개 설정(예: 공지) 읽기 전용
+    match /public/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
+```
+
+> 자원 증감은 Callable Cloud Functions(`addResources`, `consumeFatigue`, `rollGacha`)에서만 수행.
+
+---
+
+## 🌐 국제화(i18n) 구조
+
+### 원칙
+
+- **코드에 한글 리터럴 금지**. 모든 사용자 향 문자열은 `t('key')` 경유.
+- 번역 키는 `screen.component.variant` 형식 (예: `shop.buy.confirm`).
+- 초기에는 `ko.json`만 실사용, `ja.json`/`en.json`은 스켈레톤만 유지.
+
+### 예시
+
+```json
+// src/data/locales/ko.json
+{
+  "shop": {
+    "buy": {
+      "confirm": "정말 구매하시겠어요?",
+      "success": "구매 완료! 🎉"
+    }
+  }
+}
+```
+
+```typescript
+// 사용
+i18n.t('shop.buy.confirm');
+```
+
+### 로케일 결정 순서
+
+1. 유저가 설정 화면에서 수동 선택한 값
+2. 디바이스 OS 언어
+3. 기본값 `ko`
+
+---
+
+## 📊 분석 이벤트 설계 (Firebase Analytics)
+
+### 필수 이벤트 (출시 전 반드시 구현)
+
+| 이벤트명 | 언제 | 주요 파라미터 |
+|---|---|---|
+| `tutorial_step` | 튜토리얼 각 씬 진입 | `step_id`, `elapsed_sec` |
+| `tutorial_complete` | 튜토리얼 종료 | `total_sec` |
+| `session_start` / `session_end` | 앱 켜기/끄기 | `duration_sec` |
+| `minigame_start` / `minigame_end` | 미니게임 | `type`, `score`, `duration_sec` |
+| `resource_gain` / `resource_spend` | 자원 증감 | `type`, `amount`, `source` |
+| `gacha_roll` | 가챠 1회 | `pity`, `result_grade`, `is_new` |
+| `level_up` | 레벨업 | `new_level` |
+| `ad_request` / `ad_impression` / `ad_reward` | 광고 | `placement`, `filled` |
+| `iap_purchase` | 결제 완료 | `sku`, `price_krw` |
+| `room_expand` | 방 확장 | `room_id`, `cozy_score` |
+| `crash` | 예외 | `scene`, `message` (Crashlytics 연동) |
+
+### 대시보드 초기 세팅
+
+출시 직후 확인할 3대 지표:
+1. **D1/D7/D30 Retention**
+2. **ARPDAU** (Ad + IAP)
+3. **튜토리얼 완주율** (`tutorial_step` funnel)
+
+---
