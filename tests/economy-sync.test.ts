@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   FATIGUE_CONFIG,
   MAX_RESOURCE_GAIN_PER_SOURCE,
+  PLACEMENT_CONFIG,
   RESOURCE_KEYS,
 } from '@/config/Constants';
 /* eslint-disable import/no-relative-packages */
@@ -11,6 +12,7 @@ import {
 import {
   ACTIVITY_COSTS as FN_ACTIVITY_COSTS,
   DAILY_LIMITS as FN_DAILY_LIMITS,
+  INVENTORY_STORAGE_SLOTS as FN_STORAGE_SLOTS,
   MAX_RESOURCE_GAIN_PER_SOURCE as FN_CAPS,
   RESOURCE_KEYS as FN_RESOURCE_KEYS,
 } from '../functions/src/shared/economy';
@@ -32,5 +34,9 @@ describe('economy-sync: client Constants vs functions/shared', () => {
   it('functions daily limits match client', async () => {
     const { DAILY_LIMITS } = await import('@/config/Constants');
     expect(FN_DAILY_LIMITS).toEqual(DAILY_LIMITS);
+  });
+
+  it('inventory storage slots match between client and server', () => {
+    expect(FN_STORAGE_SLOTS).toBe(PLACEMENT_CONFIG.storageSlots);
   });
 });
