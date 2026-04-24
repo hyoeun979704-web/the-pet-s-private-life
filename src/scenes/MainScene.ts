@@ -40,6 +40,16 @@ export class MainScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     blockBtn.on('pointerup', () => this.scene.start('BlockPuzzleScene'));
 
+    const mergeBtn = this.add
+      .text(width / 2, height / 2 + 160, `[ ${i18n.t('main.enter_merge', 'Merge')} ]`, {
+        fontFamily: DESIGN_TOKENS.font.family,
+        fontSize: `${DESIGN_TOKENS.font.sizeLg}px`,
+        color: DESIGN_TOKENS.color.primaryDark,
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    mergeBtn.on('pointerup', () => this.scene.start('MergeGameScene'));
+
     onNetworkChange((online) => {
       if (!online) this.scene.start('OfflineScene');
     });

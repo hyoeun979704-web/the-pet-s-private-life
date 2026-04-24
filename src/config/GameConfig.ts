@@ -5,6 +5,7 @@ import { MainScene } from '@/scenes/MainScene';
 import { OfflineScene } from '@/scenes/OfflineScene';
 import { PlacementDemoScene } from '@/scenes/PlacementDemoScene';
 import { BlockPuzzleScene } from '@/scenes/minigames/BlockPuzzleScene';
+import { MergeGameScene } from '@/scenes/minigames/MergeGameScene';
 import { DESIGN_TOKENS, GAME_META } from './Constants';
 
 export function createGameConfig(): Phaser.Types.Core.GameConfig {
@@ -27,6 +28,14 @@ export function createGameConfig(): Phaser.Types.Core.GameConfig {
       pixelArt: false,
       antialias: true,
     },
-    scene: [BootScene, LoadingScene, MainScene, OfflineScene, PlacementDemoScene, BlockPuzzleScene],
+    scene: [
+      BootScene,
+      LoadingScene,
+      MainScene,
+      OfflineScene,
+      PlacementDemoScene,
+      BlockPuzzleScene,
+      MergeGameScene,
+    ],
   };
 }

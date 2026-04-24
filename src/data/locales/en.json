@@ -14,9 +14,13 @@
   "main": {
     "welcome": "Welcome back, keeper!",
     "enter_placement": "Place furniture",
-    "enter_block": "Block puzzle"
+    "enter_block": "Block puzzle",
+    "enter_merge": "Merge"
   },
   "block": {
+    "end": "End"
+  },
+  "merge": {
     "end": "End"
   },
   "placement": {

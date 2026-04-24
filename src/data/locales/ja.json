@@ -14,9 +14,13 @@
   "main": {
     "welcome": "お帰りなさい、執事さん！",
     "enter_placement": "配置する",
-    "enter_block": "ブロックパズル"
+    "enter_block": "ブロックパズル",
+    "enter_merge": "マージゲーム"
   },
   "block": {
+    "end": "終了"
+  },
+  "merge": {
     "end": "終了"
   },
   "placement": {
