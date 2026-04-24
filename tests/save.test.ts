@@ -72,4 +72,20 @@ describe('SaveSystem', () => {
     };
     await expect(makeSys(throwing).load('p5')).rejects.toBeInstanceOf(SaveLoadError);
   });
+
+  it('load throws SaveLoadError when persisting the migrated save fails', async () => {
+    const backendWithLegacy: SaveBackend = {
+      name: 'legacy',
+      async load() {
+        // v0 raw triggers migration + re-persist on load.
+        return { playerId: 'p6', nickname: 'legacy' };
+      },
+      async save() {
+        throw new Error('disk full');
+      },
+    };
+    await expect(makeSys(backendWithLegacy).load('p6')).rejects.toBeInstanceOf(
+      SaveLoadError,
+    );
+  });
 });

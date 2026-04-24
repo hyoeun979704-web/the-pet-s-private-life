@@ -84,8 +84,14 @@ export class SaveSystem {
     // renames/moves it must set the new field explicitly.
     migrated.data.playerId = playerId;
     this.cache = migrated.data;
-    if (migrated.applied.length > 0) {
-      logger.info('save.migrated', { from: migrated.fromVersion, to: migrated.toVersion });
+    // Re-persist whenever the stored version is behind (includes v0 fill,
+    // which touches fields without registering a migrator step).
+    if (migrated.fromVersion !== migrated.toVersion) {
+      logger.info('save.migrated', {
+        from: migrated.fromVersion,
+        to: migrated.toVersion,
+        applied: migrated.applied,
+      });
       const res = await this.save(migrated.data);
       if (!res.ok) throw new SaveLoadError('could not persist migrated save', res.error);
     }
