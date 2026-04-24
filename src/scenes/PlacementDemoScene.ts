@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DESIGN_TOKENS, PLACEMENT_CONFIG } from '@/config/Constants';
+import { DESIGN_TOKENS, PLACEMENT_CONFIG, type ResourceGainSource } from '@/config/Constants';
 import charactersData from '@/data/characters.json';
 import furnitureData from '@/data/furniture.json';
 import type { CharacterDef, MoodState } from '@/entities/Character';
@@ -15,11 +15,17 @@ import {
   type Rotation,
 } from '@/entities/Furniture';
 import type { RoomDef } from '@/entities/Room';
+import { createInitialSaveData, type SaveData } from '@/entities/SaveData';
 import { CharacterSystem } from '@/systems/CharacterSystem';
+import { EconomySystem, type GrantFn, type ResourceDelta } from '@/systems/EconomySystem';
+import { GameState } from '@/systems/GameState';
 import { PlacementSystem } from '@/systems/PlacementSystem';
+import { MemorySaveBackend, SaveSystem } from '@/systems/SaveSystem';
 import { compareDepth } from '@/utils/DepthSort';
+import { cozyScore } from '@/utils/CozyScore';
 import { gridToScreen, screenToGrid, type GridPos } from '@/utils/IsometricUtil';
 import { i18n } from '@/systems/I18nSystem';
+import { progressAt } from '@/systems/LevelSystem';
 
 const TILE_W = PLACEMENT_CONFIG.tilePx;
 const TILE_H = PLACEMENT_CONFIG.tilePx / 2;
@@ -34,6 +40,31 @@ function moodAlpha(mood: MoodState): number {
     case 'tired': return 0.6;
     default: return 1;
   }
+}
+
+/**
+ * Demo-local version of the server addResources semantics: merges deltas
+ * into the save's resources + dailyLimits counters. In production the
+ * server owns this mutation and we'd just refresh from Firestore.
+ */
+function mergeGrant(
+  save: SaveData,
+  _source: ResourceGainSource,
+  deltas: ResourceDelta,
+): SaveData {
+  const resources = { ...save.resources };
+  let { snackEarned, starDustEarned } = save.dailyLimits;
+  (Object.keys(deltas) as Array<keyof typeof deltas>).forEach((key) => {
+    const add = deltas[key] ?? 0;
+    resources[key] = (resources[key] ?? 0) + add;
+    if (key === 'snack') snackEarned += add;
+    if (key === 'starDust') starDustEarned += add;
+  });
+  return {
+    ...save,
+    resources,
+    dailyLimits: { ...save.dailyLimits, snackEarned, starDustEarned },
+  };
 }
 
 export class PlacementDemoScene extends Phaser.Scene {
@@ -67,6 +98,14 @@ export class PlacementDemoScene extends Phaser.Scene {
 
   private charactersLayer!: Phaser.GameObjects.Container;
 
+  private gameState!: GameState;
+
+  private economy!: EconomySystem;
+
+  private hudText!: Phaser.GameObjects.Text;
+
+  private unsubState: (() => void) | null = null;
+
   constructor() {
     super({ key: 'PlacementDemoScene' });
   }
@@ -86,15 +125,80 @@ export class PlacementDemoScene extends Phaser.Scene {
     this.originX = width / 2;
     this.originY = height / 2 - (room.gridHeight * TILE_H) / 2;
 
+    this.initGameState();
+
     this.gridLayer = this.add.graphics();
     this.itemsLayer = this.add.container(0, 0);
     this.charactersLayer = this.add.container(0, 0);
     this.drawGrid(room);
     this.buildPalette(defs);
     this.buildHud();
+    this.buildResourceHud();
     this.bindInput();
     this.redrawItems();
     this.initCharacters(room);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubState?.());
+  }
+
+  private initGameState(): void {
+    const backend = new MemorySaveBackend();
+    const saveSystem = new SaveSystem({ backend, now: () => this.time.now, saveRetries: 1 });
+    const initial = createInitialSaveData('demo-player', this.time.now);
+    this.gameState = new GameState(initial, saveSystem);
+
+    const grantFn: GrantFn = async (source, deltas) => {
+      await this.gameState.patch((d) => mergeGrant(d, source, deltas));
+      return { ok: true, granted: deltas };
+    };
+    this.economy = new EconomySystem({
+      grantFn,
+      getSave: () => this.gameState.get(),
+    });
+    this.unsubState = this.gameState.subscribe(() => this.refreshResourceHud());
+  }
+
+  private buildResourceHud(): void {
+    const { width } = this.scale;
+    this.hudText = this.add
+      .text(width - 24, 20, '', {
+        fontFamily: DESIGN_TOKENS.font.family,
+        fontSize: `${DESIGN_TOKENS.font.sizeSm}px`,
+        color: DESIGN_TOKENS.color.textPrimary,
+        align: 'right',
+      })
+      .setOrigin(1, 0);
+
+    // Dev-only grant button so the HUD has something to display.
+    const grantBtn = this.add
+      .text(width - 24, 200, '[ +5 snack (block_puzzle) ]', {
+        fontFamily: DESIGN_TOKENS.font.family,
+        fontSize: `${DESIGN_TOKENS.font.sizeSm}px`,
+        color: DESIGN_TOKENS.color.primaryDark,
+      })
+      .setOrigin(1, 0)
+      .setInteractive({ useHandCursor: true });
+    grantBtn.on('pointerup', async () => {
+      await this.economy.grant('block_puzzle', { snack: 5 });
+    });
+
+    this.refreshResourceHud();
+  }
+
+  private refreshResourceHud(): void {
+    if (!this.hudText) return;
+    const { resources, level, exp } = this.gameState.get();
+    const p = progressAt(exp);
+    const cozy = cozyScore(this.system.getPlaced(), furnitureData.items as unknown as FurnitureDef[]);
+    const remaining = this.economy.dailyRemaining();
+    const lines = [
+      `Lv.${level}  (${p.expToNext ?? 'MAX'} to next)`,
+      `🍖 ${resources.snack}   ⭐ ${resources.starDust}   🔮 ${resources.magicStone}`,
+      `🧩 ${resources.magicShard}   🎫 ${resources.gachaTicket}`,
+      `Cozy: ${cozy.toFixed(1)}`,
+      `Daily left: 🍖 ${remaining.snack}  ⭐ ${remaining.starDust}`,
+    ];
+    this.hudText.setText(lines.join('\n'));
   }
 
   override update(): void {
@@ -247,12 +351,14 @@ export class PlacementDemoScene extends Phaser.Scene {
         const res = this.system.place(this.selectedDefId, this.hoverCell, this.selectedRotation);
         if (!res.ok) this.flashStatus(`place failed: ${res.reason}`);
         this.redrawItems();
+      this.refreshResourceHud();
         return;
       }
       const picked = this.pickAt(this.hoverCell);
       if (picked && p.rightButtonReleased()) {
         this.system.rotate(picked.instanceId);
         this.redrawItems();
+      this.refreshResourceHud();
       } else if (picked) {
         this.selectedInstanceId = picked.instanceId;
         this.updateStatus();
@@ -263,6 +369,7 @@ export class PlacementDemoScene extends Phaser.Scene {
       if (this.selectedInstanceId) {
         this.system.rotate(this.selectedInstanceId);
         this.redrawItems();
+      this.refreshResourceHud();
       } else {
         this.selectedRotation = ((this.selectedRotation + 90) % 360) as Rotation;
         this.refreshGhost();
@@ -272,6 +379,7 @@ export class PlacementDemoScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-Z', () => {
       this.system.undo();
       this.redrawItems();
+      this.refreshResourceHud();
     });
 
     this.input.keyboard?.on('keydown-X', () => {
@@ -279,6 +387,7 @@ export class PlacementDemoScene extends Phaser.Scene {
         this.system.remove(this.selectedInstanceId);
         this.selectedInstanceId = null;
         this.redrawItems();
+      this.refreshResourceHud();
       }
     });
   }
