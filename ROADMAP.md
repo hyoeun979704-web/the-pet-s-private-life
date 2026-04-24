@@ -422,3 +422,474 @@ i18n.t('shop.buy.confirm');
 3. **튜토리얼 완주율** (`tutorial_step` funnel)
 
 ---
+
+## ⚡ 성능 예산 & 접근성
+
+### 성능 예산
+
+| 항목 | 목표값 |
+|---|---|
+| 초기 APK 크기 | **≤ 80 MB** (OBB 없이) |
+| 첫 진입 로딩 | **≤ 5초** (Wi-Fi), **≤ 10초** (LTE) |
+| FPS (중사양 이상) | 60 |
+| FPS (Android 8, 2GB RAM) | 30 이상 유지 |
+| 메인 씬 메모리 | ≤ 300 MB |
+| 에셋 텍스처 최대 | 2048×2048 (POT) |
+
+> 위반 시 조치: 텍스처 아틀라스화 / lazy load / `image/webp` 사용 / 스프라이트시트 통합.
+
+### 접근성 기준
+
+- 텍스트 최소 색상 대비 **4.5:1** (WCAG AA)
+- 기본 폰트 18pt, 설정에서 "큰 글자" 옵션 제공 (+20%)
+- 탭 히트박스 최소 **44×44 dp**
+- 색상 단독 정보 전달 금지 (예: 자원 부족 표시는 색 + 아이콘 + 텍스트)
+- 애니메이션 감소 옵션 (설정 → 이펙트 off)
+
+---
+
+## 💾 세이브 데이터 & 마이그레이션
+
+```typescript
+const SAVE_SCHEMA_VERSION = 1;
+
+interface SaveData {
+  schemaVersion: number;      // 필수
+  playerId: string;
+  level: number;
+  exp: number;
+  resources: Resources;
+  rooms: RoomState[];
+  characters: OwnedCharacter[];
+  furniture: OwnedFurniture[];
+  dailyLimits: DailyLimitTracker;
+  gachaPity: number;
+  lastLogin: Timestamp;
+  settings: GameSettings;
+  locale: 'ko' | 'ja' | 'en';
+}
+```
+
+### 마이그레이션 규칙
+
+```typescript
+// src/systems/MigrationSystem.ts
+type Migrator = (data: any) => any;
+
+const MIGRATIONS: Record<number, Migrator> = {
+  // 1 -> 2: magicShard 필드 추가
+  2: (data) => ({ ...data, resources: { ...data.resources, magicShard: 0 } }),
+  // 3 -> 4: ...
+};
+
+export function migrate(data: any): SaveData {
+  let d = data;
+  while (d.schemaVersion < SAVE_SCHEMA_VERSION) {
+    const next = d.schemaVersion + 1;
+    d = MIGRATIONS[next](d);
+    d.schemaVersion = next;
+  }
+  return d as SaveData;
+}
+```
+
+> 스키마 변경 시 반드시 `SAVE_SCHEMA_VERSION` 증가 + 마이그레이터 추가 + Vitest로 이전 버전 → 최신 변환 테스트.
+
+---
+
+## 📅 시즌 & 이벤트 콘텐츠 운영
+
+### 스키마 (seasons.json)
+
+```json
+{
+  "seasons": [
+    {
+      "id": "season_2026_spring",
+      "nameKo": "벚꽃 시즌",
+      "startAt": "2026-03-20T00:00:00+09:00",
+      "endAt":   "2026-04-20T23:59:59+09:00",
+      "themeColors": { "primary": "#FFC8DD", "secondary": "#FAEDCB" },
+      "limitedCharacters": ["cat_sakura_munchkin"],
+      "limitedFurniture": ["cherry_blossom_tree", "sakura_rug"],
+      "limitedQuizTrack": "spring_animals",
+      "rewards": { "login7days": { "magicStone": 3 } }
+    }
+  ]
+}
+```
+
+### 운영 원칙
+
+- 시즌은 **JSON 교체 + 서버 토글**만으로 on/off. 앱 업데이트 불필요.
+- 한정 캐릭터/가구는 도감에 "기간 한정" 라벨 표시.
+- 시즌 종료 후 1년 뒤 재등장 가능(복각).
+
+---
+
+## 🔊 사운드 & 음악 전략
+
+### 역할 분담
+
+| 종류 | 용도 | 권장 소스 |
+|---|---|---|
+| BGM (메인) | 마을, 로비 | Suno AI 자체 생성 (상업 이용 플랜) |
+| BGM (미니게임) | 블록/머지/퀴즈 | Suno AI 또는 [freepd.com] |
+| SFX (탭/구매/가챠) | 인터랙션 | [freesound.org] CC0 선별, [zapsplat.com] |
+| 보이스 | 캐릭터 울음 | 실제 샘플 구매(Pond5) 또는 AI 생성 |
+
+### 기술 규약
+
+- 포맷: `.ogg` (안드로이드 친화)
+- BGM 비트레이트 128kbps, SFX 96kbps
+- 총 사운드 용량 **≤ 15 MB**
+- 모든 파일에 **라이선스 출처**를 `/audio/LICENSES.md`에 기록
+
+---
+
+## 🎨 에셋 생성 AI 파이프라인 (1인 운영 특화)
+
+### 역할 분담
+
+| 에셋 종류 | 주 도구 | 보조 도구 | 품질 관리 |
+|---|---|---|---|
+| 캐릭터 일러스트 원안 | Midjourney v6 | Niji Journey | 스타일 레퍼런스 3장 고정 |
+| 캐릭터 스프라이트 | Midjourney → Photoshop/Aseprite 리드로우 | ControlNet | 아이소 각도 30° 통일 |
+| 가구 아이콘 | Midjourney + `--no background` | Remove.bg | 2배수 크기 제작 → 다운샘플 |
+| 배경 타일 | Stable Diffusion + LoRA | Hand-touch | 타일링 검증 필수 |
+| UI 버튼/아이콘 | Figma 자체 | Lucide + 커스텀 | 디자인 토큰 팔레트 고정 |
+| BGM | Suno AI | FreePD | 저작권 확인 후 사용 |
+
+### 생성 후 필수 체크리스트
+
+- [ ] 파일명 규칙 일치 (예: `char_cat_munchkin_idle_01.png`)
+- [ ] 해상도 / POT(Power of Two) 정합
+- [ ] 투명 배경 여부
+- [ ] 톤 일관성 (디자인 토큰 팔레트 이내)
+- [ ] 라이선스 출처 기록 (`/assets/LICENSES.md`)
+
+> **경고**: 실제 유명 캐릭터/연예인/브랜드 스타일 프롬프트 사용 금지.
+
+---
+
+## 🚀 CI/CD & 크래시 리포팅
+
+### GitHub Actions 초기 구성
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+```
+
+### 안드로이드 빌드 (수동 트리거)
+
+```yaml
+# .github/workflows/android.yml
+name: Android Build
+on: { workflow_dispatch: {} }
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      # 서명키는 GitHub Secrets에서 base64 복원
+      # gradle assembleRelease → AAB 업로드
+```
+
+### Crashlytics
+
+- `Logger.error()`는 내부적으로 `Crashlytics.recordException`을 호출.
+- Firestore 접근 실패, 광고 로드 실패, IAP 예외 모두 기록.
+- 주 1회 Crashlytics 대시보드 점검 루틴.
+
+---
+
+## 🎬 튜토리얼 구조 (5씬)
+
+v1과 동일. 각 씬 진입/종료 시 `tutorial_step` 이벤트 전송.
+
+---
+
+## 📱 로딩 화면
+
+v1과 동일. TMI 텍스트는 `loading_texts.json`에서 로드, 미보유 캐릭터는 실루엣.
+
+---
+
+## 🎨 디자인 시스템
+
+v1과 동일한 디자인 토큰 유지. 단, **모든 색상 HEX는 `Constants.ts`의 `DESIGN_TOKENS`에서만 참조**.
+
+---
+
+## 🪜 단계별 출시 스코프
+
+### MVP (내부 테스트)
+
+- 거실 1개 / 캐릭터 5종(등급별 1~2) / 가구 30개 / 퀴즈 30문항
+- 미니게임 1종(블록 퍼즐)
+- 광고·IAP 없음 / 저장은 Firebase
+- 목표: 핵심 루프(플레이→자원→배치→만족) 검증
+
+### α (클로즈드 베타)
+
+- 침실 해금 / 캐릭터 10종 / 가구 80개 / 퀴즈 100문항
+- 미니게임 3종 / 가챠 / 피로도 광고만
+- 목표: 리텐션 D1 30% / 튜토리얼 완주 80%
+
+### β (오픈 베타) — 소프트 런치
+
+- 대만 + 홍콩 출시 (한국어 + 간체 중국어 임시)
+- 콘텐츠 70% 완성
+- **수익 모델: 광고 전용** (보상형 5종 전부 활성, IAP는 비활성)
+- 목적: 광고 수익 단가·채움율 검증 + 리텐션 데이터 확보 (IAP 도입 판단 근거)
+- 목표: ARPDAU $0.05 이상, D7 15%
+
+### 정식 출시 (한국)
+
+- 문서 "런칭 콘텐츠 기준" 전체
+- 광고 5종 전체 + IAP 2~3종
+- 목표: D30 7% 이상, 월 ARPDAU $0.10 이상
+
+### 글로벌 확장
+
+- 일본 → 영어권 순차. i18n 데이터만 추가.
+
+> 각 단계 종료 시 별도 "다음 단계로 진행" 명령을 내릴 것.
+
+---
+
+## 📊 KPI & 성공 기준
+
+| 지표 | MVP | α | β | 정식 |
+|---|---|---|---|---|
+| 튜토리얼 완주율 | - | ≥ 80% | ≥ 85% | ≥ 88% |
+| D1 Retention | - | ≥ 30% | ≥ 35% | ≥ 40% |
+| D7 Retention | - | - | ≥ 15% | ≥ 18% |
+| D30 Retention | - | - | - | ≥ 7% |
+| 평균 세션 시간 | - | ≥ 6분 | ≥ 8분 | ≥ 10분 |
+| ARPDAU | - | - | ≥ $0.05 | ≥ $0.10 |
+| Crashlytics 크래시율 | - | ≤ 2% | ≤ 1% | ≤ 0.5% |
+
+---
+
+## 📦 런칭 콘텐츠 기준 (정식 출시)
+
+```
+공간        방 2개 (거실 + 침실), 3번째 방 "업데이트 준비중"
+캐릭터      17종
+가구        150개
+미니게임    3종
+퀴즈 DB     300문항
+언어        ko (ja·en은 스켈레톤)
+```
+
+---
+
+## 📐 PART 공통 실행 규약
+
+**모든 PART는 아래 5개 섹션을 반드시 채운 뒤 착수합니다.**
+
+```
+1) 목표(Goal)
+   - 이 PART로 달성할 기능을 한 문장으로.
+
+2) 세부 단계(Steps)
+   - 3~7개.
+   - 각 단계 완료 시 "✅ [단계명] 완료 — 다음 진행할까요?" 확인.
+
+3) 완료 기준(DoD)  ※ 모두 체크되어야 "완료"
+   [ ] 주요 기능이 실제로 동작한다
+   [ ] 유닛테스트(Vitest) ≥ 1개 통과
+   [ ] 수치는 모두 Constants / JSON 외부화
+   [ ] ESLint·TypeScript 에러 0
+   [ ] 사용자 향 문자열은 i18n 키로 등록
+   [ ] 관련 분석 이벤트(있다면) 전송 확인
+   [ ] (해당 PART가 영구 데이터에 영향을 준다면) 마이그레이터 추가
+
+4) 산출물(Artifacts)
+   - 새로 생성/수정된 파일 목록과 한 줄 설명
+
+5) 에셋 스펙표
+   | 파일명 규칙 | 크기(px) | 확장자 | 개수 | 비고 |
+```
+
+---
+
+## 🗂 PART별 개발 순서 (재조정판)
+
+```
+PART 0   프로젝트 초기 세팅
+         - Phaser + TypeScript + Vite + ESLint/Prettier + Vitest
+         - Capacitor Android
+         - Firebase 초기 연동 (Auth 스텁 + Analytics + Crashlytics)
+         - 디자인 토큰 / 공통 UI / i18n 스켈레톤
+         - 네트워크 감지 + 오프라인 씬
+         - GitHub Actions CI(lint/typecheck/test/build)
+
+PART 1   아이소메트릭 배치 시스템
+         - iso 그리드, Y축 깊이 정렬
+         - 드래그앤드롭 배치 / 회전 / 창고 / 되돌리기
+
+PART 2   캐릭터 시스템
+         - 17종 데이터 / 자유이동 AI / 피로도 / 수면 / 상호작용
+
+PART 3   Firebase Auth + Firestore 스키마 + 보안 규칙  ← ★ v1 대비 앞당김
+         - 게스트/구글 로그인 / 게스트→계정 마이그레이션
+         - SaveData v1 스키마 / MigrationSystem
+         - 보안 규칙 + Cloud Functions 자원 증감
+
+PART 4   경제 시스템 + 상점 + 레벨 확장
+         - 자원 5종 / 일일 한도 / 아늑함 점수 / 방 확장
+
+PART 5   블록 퍼즐 미니게임
+
+PART 6   머지 미니게임
+
+PART 7   퀴즈 미니게임 (+ 확률형 미포함이지만 확률 공시 UI는 PART 8로)
+
+PART 8   가챠 시스템 + 확률 공시 화면
+
+PART 9   광고 시스템 (AdMob)
+
+PART 10  IAP (Google Play Billing)  ※ β에서는 비활성, 정식 출시 직전 활성화
+
+PART 11  튜토리얼 (5씬)
+
+PART 12  로딩 화면 + TMI + 시즌 시스템(skeleton)
+
+PART 13  폴리싱
+         - 사운드, 파티클, 성능 최적화
+         - 앱 아이콘, 스플래시, 스토어 등록 자산
+         - 개인정보처리방침 페이지, 계정 삭제 플로우
+
+PART 14  소프트 런치 준비 (대만/홍콩)
+         - 로케일 스켈레톤 활성화 테스트
+         - 이벤트 수집/대시보드 점검
+```
+
+> PART 3의 Firebase를 앞당긴 이유: 각 PART에서 생긴 데이터가 처음부터 올바른 스키마·검증 파이프로 쌓이게 하기 위해. 뒤로 미루면 임시 저장 코드가 여기저기 박혀 나중에 큰 마이그레이션 부담이 됨.
+
+---
+
+## ⚙️ 개발 원칙 (v2)
+
+```
+1. 데이터와 로직 분리
+   모든 게임 수치는 /data/*.json 또는 Constants.ts에만.
+
+2. 플레이스홀더 우선
+   캐릭터 멘트·TMI·퀴즈 문제는 더미로 시작, 나중에 JSON 교체.
+
+3. 에셋 교체 가능 구조
+   모든 스프라이트는 키값 참조. 경로는 Constants.ts 한 곳만.
+
+4. 서버 신뢰, 클라이언트 불신
+   자원/재화 증감은 Cloud Functions. 클라 write 금지.
+
+5. i18n 우선
+   사용자 향 문자열은 항상 t('key'). 한글 리터럴 금지.
+
+6. 분석 이벤트 기본 탑재
+   새 기능마다 최소 1개 이상의 분석 이벤트를 정의·전송.
+
+7. 모든 영구 데이터에는 스키마 버전
+   SaveData, 시즌 상태, 설정 등 모두 schemaVersion 필드.
+
+8. 오류 처리 일관성
+   Firebase 실패 → 오프라인 안내
+   광고 실패 → 조용히 토스트
+   저장 실패 → 3회 재시도 후 알림 + Crashlytics 기록
+
+9. PART 완료 시
+   - DoD 체크리스트 전부 ✅
+   - 에셋 규격표 출력
+   - 다음 PART 시작 전 에셋 확인 대기
+```
+
+---
+
+## 📋 PART 0 시작 명령어 (v2)
+
+```
+위 문서(특히 MASTER PROMPT와 PART 공통 실행 규약)를 숙지했으면, PART 0을 시작해줘.
+
+[PART 0 목표]
+1. Phaser.js 3 + TypeScript(strict) + Vite + ESLint(airbnb-base) + Prettier + Vitest 프로젝트 생성
+2. /src 폴더 구조 생성 (빈 파일 포함)
+3. Constants.ts 디자인 토큰 설정
+4. Capacitor Android 설정
+5. Firebase 초기 연동 (Auth 스텁 + Analytics + Crashlytics)
+6. 네트워크 감지 유틸리티 + 오프라인 안내 씬
+7. i18n 스켈레톤(ko.json 기본, ja/en 빈 파일)
+8. BootScene → LoadingScene → MainScene 기본 흐름
+9. GitHub Actions CI: lint / typecheck / test / build
+
+[PART 0 DoD]
+[ ] `npm run dev` 시 Phaser 빈 씬 렌더링
+[ ] `npm run build` 에러 0
+[ ] `npm run lint` / `npm run typecheck` 에러 0
+[ ] `npm run test` 샘플 1개 통과
+[ ] `npx cap sync android` 성공
+[ ] Firebase Anonymous Auth 1회 성공 로그
+[ ] 네트워크 차단 시 OfflineScene 표시
+[ ] CI 워크플로우가 GitHub에서 green
+
+[응답 규약 재확인]
+- 대화는 한국어, 코드/식별자는 영문
+- 각 단계 완료 시 "✅ [단계명] 완료 — 다음 진행할까요?" 확인
+- PART 0 완료 후 에셋 규격표를 표 형식으로 출력
+```
+
+---
+
+## 📎 부록 A — 환경 변수(.env.example)
+
+```env
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+VITE_FIREBASE_MEASUREMENT_ID=
+
+VITE_ADMOB_APP_ID_ANDROID=
+VITE_ADMOB_AD_UNIT_REWARDED=
+
+VITE_ENV=development
+```
+
+> `.env`는 절대 커밋하지 않음. `.env.example`만 저장소에 포함.
+
+---
+
+## 📎 부록 B — 브랜치 & 릴리즈 전략 (1인 기준 단순화)
+
+- `main`: 항상 배포 가능 상태
+- `dev`: 다음 릴리즈용 통합 브랜치
+- `feat/part-0-bootstrap` 등 PART 단위 브랜치
+- 릴리즈 태그: `v0.1.0-mvp`, `v0.2.0-alpha`, `v0.5.0-soft`, `v1.0.0`
+
+---
+
+## 📎 부록 C — 다음 문서가 필요한 시점
+
+이 계획서가 커버하지 않는 후속 문서:
+- `MARKETING.md` — 스토어 설명, 스크린샷 콘티, ASO 키워드
+- `COMMUNITY.md` — 디스코드/카카오채널 운영 규칙
+- `LIVEOPS.md` — 시즌 기획 템플릿, 업데이트 캘린더
+
+정식 출시 1개월 전에 별도 작성 권장.
