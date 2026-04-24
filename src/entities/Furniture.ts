@@ -22,3 +22,13 @@ export interface PlacedFurniture {
   gy: number;
   rotation: Rotation;
 }
+
+export function rotatedFootprint(
+  def: FurnitureDef,
+  rotation: Rotation,
+): { w: number; h: number } {
+  if (rotation === 90 || rotation === 270) {
+    return { w: def.footprintH, h: def.footprintW };
+  }
+  return { w: def.footprintW, h: def.footprintH };
+}

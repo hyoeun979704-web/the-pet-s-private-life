@@ -23,8 +23,8 @@ export function gridToScreen(pos: GridPos, originX = 0, originY = 0): ScreenPos 
 export function screenToGrid(pos: ScreenPos, originX = 0, originY = 0): GridPos {
   const dx = pos.x - originX;
   const dy = pos.y - originY;
-  const gx = Math.floor(dx / (TILE_W / 2) + dy / (TILE_H / 2)) / 2;
-  const gy = Math.floor(dy / (TILE_H / 2) - dx / (TILE_W / 2)) / 2;
+  const gx = dx / TILE_W + dy / TILE_H;
+  const gy = dy / TILE_H - dx / TILE_W;
   return { gx: Math.floor(gx), gy: Math.floor(gy) };
 }
 

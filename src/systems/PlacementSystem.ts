@@ -1,8 +1,9 @@
 import { PLACEMENT_CONFIG } from '@/config/Constants';
-import type {
-  FurnitureDef,
-  PlacedFurniture,
-  Rotation,
+import {
+  rotatedFootprint,
+  type FurnitureDef,
+  type PlacedFurniture,
+  type Rotation,
 } from '@/entities/Furniture';
 import type { RoomDef } from '@/entities/Room';
 import { isInsideRoom, rectCells, type GridPos } from '@/utils/IsometricUtil';
@@ -15,15 +16,7 @@ export interface PlacementResult {
 type Action =
   | { kind: 'place'; snapshot: PlacedFurniture }
   | { kind: 'remove'; snapshot: PlacedFurniture }
-  | { kind: 'rotate'; instanceId: string; prev: Rotation; next: Rotation }
-  | { kind: 'move'; instanceId: string; prev: GridPos; next: GridPos };
-
-function rotatedFootprint(def: FurnitureDef, rotation: Rotation): { w: number; h: number } {
-  if (rotation === 90 || rotation === 270) {
-    return { w: def.footprintH, h: def.footprintW };
-  }
-  return { w: def.footprintW, h: def.footprintH };
-}
+  | { kind: 'rotate'; instanceId: string; prev: Rotation; next: Rotation };
 
 export class PlacementSystem {
   private readonly room: RoomDef;
@@ -66,16 +59,11 @@ export class PlacementSystem {
   }
 
   place(defId: string, pos: GridPos, rotation: Rotation = 0): PlacementResult {
-    const def = this.defs.get(defId);
-    if (!def) return { ok: false, reason: 'not_found' };
     if ((this.inventory.get(defId) ?? 0) <= 0) {
       return { ok: false, reason: 'not_in_inventory' };
     }
-    const { w, h } = rotatedFootprint(def, rotation);
-    if (!this.fitsRoom(pos, w, h)) return { ok: false, reason: 'out_of_bounds' };
-    if (!PLACEMENT_CONFIG.allowOverlap && this.hasCollision(pos, w, h)) {
-      return { ok: false, reason: 'overlap' };
-    }
+    const validation = this.validate(defId, pos, rotation);
+    if (!validation.ok) return validation;
 
     const instance: PlacedFurniture = {
       instanceId: `inst_${this.nextInstanceSeq}`,
@@ -95,8 +83,12 @@ export class PlacementSystem {
   remove(instanceId: string): PlacementResult {
     const inst = this.placed.get(instanceId);
     if (!inst) return { ok: false, reason: 'not_found' };
+    const current = this.inventory.get(inst.defId) ?? 0;
+    if (current + 1 > PLACEMENT_CONFIG.storageSlots) {
+      return { ok: false, reason: 'storage_full' };
+    }
     this.placed.delete(instanceId);
-    this.inventory.set(inst.defId, (this.inventory.get(inst.defId) ?? 0) + 1);
+    this.inventory.set(inst.defId, current + 1);
     this.recordAction({ kind: 'remove', snapshot: inst });
     return { ok: true };
   }
@@ -104,21 +96,15 @@ export class PlacementSystem {
   rotate(instanceId: string): PlacementResult {
     const inst = this.placed.get(instanceId);
     if (!inst) return { ok: false, reason: 'not_found' };
-    const def = this.defs.get(inst.defId);
-    if (!def) return { ok: false, reason: 'not_found' };
     const prev = inst.rotation;
     const next = ((prev + 90) % 360) as Rotation;
-    const { w, h } = rotatedFootprint(def, next);
 
-    const backup = { ...inst };
+    // Temporarily remove so collision check ignores self.
     this.placed.delete(instanceId);
-    if (!this.fitsRoom({ gx: inst.gx, gy: inst.gy }, w, h)) {
-      this.placed.set(instanceId, backup);
-      return { ok: false, reason: 'out_of_bounds' };
-    }
-    if (!PLACEMENT_CONFIG.allowOverlap && this.hasCollision({ gx: inst.gx, gy: inst.gy }, w, h)) {
-      this.placed.set(instanceId, backup);
-      return { ok: false, reason: 'overlap' };
+    const validation = this.validate(inst.defId, { gx: inst.gx, gy: inst.gy }, next);
+    if (!validation.ok) {
+      this.placed.set(instanceId, inst);
+      return validation;
     }
     this.placed.set(instanceId, { ...inst, rotation: next });
     this.recordAction({ kind: 'rotate', instanceId, prev, next });
@@ -126,14 +112,7 @@ export class PlacementSystem {
   }
 
   canPlace(defId: string, pos: GridPos, rotation: Rotation = 0): PlacementResult {
-    const def = this.defs.get(defId);
-    if (!def) return { ok: false, reason: 'not_found' };
-    const { w, h } = rotatedFootprint(def, rotation);
-    if (!this.fitsRoom(pos, w, h)) return { ok: false, reason: 'out_of_bounds' };
-    if (!PLACEMENT_CONFIG.allowOverlap && this.hasCollision(pos, w, h)) {
-      return { ok: false, reason: 'overlap' };
-    }
-    return { ok: true };
+    return this.validate(defId, pos, rotation);
   }
 
   undo(): boolean {
@@ -154,13 +133,19 @@ export class PlacementSystem {
     } else if (action.kind === 'rotate') {
       const inst = this.placed.get(action.instanceId);
       if (inst) this.placed.set(action.instanceId, { ...inst, rotation: action.prev });
-    } else if (action.kind === 'move') {
-      const inst = this.placed.get(action.instanceId);
-      if (inst) {
-        this.placed.set(action.instanceId, { ...inst, gx: action.prev.gx, gy: action.prev.gy });
-      }
     }
     return true;
+  }
+
+  private validate(defId: string, pos: GridPos, rotation: Rotation): PlacementResult {
+    const def = this.defs.get(defId);
+    if (!def) return { ok: false, reason: 'not_found' };
+    const { w, h } = rotatedFootprint(def, rotation);
+    if (!this.fitsRoom(pos, w, h)) return { ok: false, reason: 'out_of_bounds' };
+    if (!PLACEMENT_CONFIG.allowOverlap && this.hasCollision(pos, w, h)) {
+      return { ok: false, reason: 'overlap' };
+    }
+    return { ok: true };
   }
 
   private recordAction(action: Action): void {
@@ -181,10 +166,9 @@ export class PlacementSystem {
     );
   }
 
-  private hasCollision(pos: GridPos, w: number, h: number, ignoreId?: string): boolean {
+  private hasCollision(pos: GridPos, w: number, h: number): boolean {
     const target = new Set(rectCells(pos, w, h).map((c) => `${c.gx},${c.gy}`));
     return Array.from(this.placed.values()).some((inst) => {
-      if (inst.instanceId === ignoreId) return false;
       const def = this.defs.get(inst.defId);
       if (!def) return false;
       const { w: iw, h: ih } = rotatedFootprint(def, inst.rotation);

@@ -106,4 +106,21 @@ describe('PlacementSystem', () => {
     expect(sys.getPlaced()).toHaveLength(1);
     expect(sys.undo()).toBe(false); // rug place already dropped from stack
   });
+
+  it('remove refuses when inventory cap would overflow', () => {
+    // Scenario: inventory hit cap, user places 1 (inv -> 99), grants 1 (-> 100),
+    // so inv is now full again while a placed copy exists. Removing that placed
+    // copy would push inventory past the cap -> refuse.
+    const full = new PlacementSystem(ROOM, [RUG]);
+    full.grantToInventory(RUG.id, 100); // == PLACEMENT_CONFIG.storageSlots
+    full.place(RUG.id, { gx: 0, gy: 0 });
+    full.grantToInventory(RUG.id, 1); // back to 100
+    expect(full.getInventoryCount(RUG.id)).toBe(100);
+    const placed = full.getPlaced()[0];
+    if (!placed) throw new Error('expected placement to succeed');
+    const res = full.remove(placed.instanceId);
+    expect(res.ok).toBe(false);
+    expect(res.reason).toBe('storage_full');
+    expect(full.getPlaced()).toHaveLength(1);
+  });
 });

@@ -1,7 +1,8 @@
 import type { GridPos } from './IsometricUtil';
 
 export function depthFromGrid(pos: GridPos, footprintW = 1, footprintH = 1): number {
-  return pos.gx + footprintW + (pos.gy + footprintH);
+  // Back-right corner cell index — sorts back-to-front in iso view.
+  return pos.gx + footprintW - 1 + (pos.gy + footprintH - 1);
 }
 
 export function compareDepth(

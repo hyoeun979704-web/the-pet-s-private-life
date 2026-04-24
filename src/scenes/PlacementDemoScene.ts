@@ -1,7 +1,12 @@
 import Phaser from 'phaser';
 import { DESIGN_TOKENS, PLACEMENT_CONFIG } from '@/config/Constants';
 import furnitureData from '@/data/furniture.json';
-import type { FurnitureDef, PlacedFurniture, Rotation } from '@/entities/Furniture';
+import {
+  rotatedFootprint,
+  type FurnitureDef,
+  type PlacedFurniture,
+  type Rotation,
+} from '@/entities/Furniture';
 import type { RoomDef } from '@/entities/Room';
 import { PlacementSystem } from '@/systems/PlacementSystem';
 import { compareDepth } from '@/utils/DepthSort';
@@ -51,6 +56,7 @@ export class PlacementDemoScene extends Phaser.Scene {
     defs.forEach((d) => this.system.grantToInventory(d.id, 3));
 
     this.cameras.main.setBackgroundColor(DESIGN_TOKENS.color.bg);
+    this.input.mouse?.disableContextMenu();
 
     const { width, height } = this.scale;
     this.originX = width / 2;
@@ -61,7 +67,7 @@ export class PlacementDemoScene extends Phaser.Scene {
     this.drawGrid(room);
     this.buildPalette(defs);
     this.buildHud();
-    this.bindInput(room);
+    this.bindInput();
     this.redrawItems();
   }
 
@@ -146,7 +152,7 @@ export class PlacementDemoScene extends Phaser.Scene {
     this.statusText.setText(msg);
   }
 
-  private bindInput(room: RoomDef): void {
+  private bindInput(): void {
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       this.hoverCell = screenToGrid({ x: p.worldX, y: p.worldY }, this.originX, this.originY);
       this.refreshGhost();
@@ -192,15 +198,24 @@ export class PlacementDemoScene extends Phaser.Scene {
         this.redrawItems();
       }
     });
-
-    // 임시: 방 크기 사용 확인 (빌드시 unused 방지)
-    if (room.gridWidth <= 0) throw new Error('invalid room');
   }
 
   private pickAt(cell: GridPos): PlacedFurniture | null {
-    return this.system
-      .getPlaced()
-      .find((inst) => inst.gx === cell.gx && inst.gy === cell.gy) ?? null;
+    return (
+      this.system.getPlaced().find((inst) => {
+        const def = (furnitureData.items as unknown as FurnitureDef[]).find(
+          (d) => d.id === inst.defId,
+        );
+        if (!def) return false;
+        const { w, h } = rotatedFootprint(def, inst.rotation);
+        return (
+          cell.gx >= inst.gx
+          && cell.gx < inst.gx + w
+          && cell.gy >= inst.gy
+          && cell.gy < inst.gy + h
+        );
+      }) ?? null
+    );
   }
 
   private refreshGhost(): void {
@@ -216,8 +231,7 @@ export class PlacementDemoScene extends Phaser.Scene {
       ? parseHex(DESIGN_TOKENS.color.success)
       : parseHex(DESIGN_TOKENS.color.danger);
     const g = this.add.graphics();
-    const w = this.selectedRotation === 90 || this.selectedRotation === 270 ? def.footprintH : def.footprintW;
-    const h = this.selectedRotation === 90 || this.selectedRotation === 270 ? def.footprintW : def.footprintH;
+    const { w, h } = rotatedFootprint(def, this.selectedRotation);
     for (let dx = 0; dx < w; dx += 1) {
       for (let dy = 0; dy < h; dy += 1) {
         this.drawTile({ gx: this.hoverCell.gx + dx, gy: this.hoverCell.gy + dy }, g, color, 0.5);
