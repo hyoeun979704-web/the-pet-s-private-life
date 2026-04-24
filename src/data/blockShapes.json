@@ -1,0 +1,14 @@
+{
+  "shapes": [
+    { "id": "s_1x1",     "width": 1, "height": 1, "colorIndex": 0, "cells": [{ "dx": 0, "dy": 0 }] },
+    { "id": "s_h2",      "width": 2, "height": 1, "colorIndex": 0, "cells": [{ "dx": 0, "dy": 0 }, { "dx": 1, "dy": 0 }] },
+    { "id": "s_v2",      "width": 1, "height": 2, "colorIndex": 0, "cells": [{ "dx": 0, "dy": 0 }, { "dx": 0, "dy": 1 }] },
+    { "id": "s_h3",      "width": 3, "height": 1, "colorIndex": 1, "cells": [{ "dx": 0, "dy": 0 }, { "dx": 1, "dy": 0 }, { "dx": 2, "dy": 0 }] },
+    { "id": "s_v3",      "width": 1, "height": 3, "colorIndex": 1, "cells": [{ "dx": 0, "dy": 0 }, { "dx": 0, "dy": 1 }, { "dx": 0, "dy": 2 }] },
+    { "id": "s_2x2",     "width": 2, "height": 2, "colorIndex": 1, "cells": [{ "dx": 0, "dy": 0 }, { "dx": 1, "dy": 0 }, { "dx": 0, "dy": 1 }, { "dx": 1, "dy": 1 }] },
+    { "id": "s_l_tl",    "width": 2, "height": 2, "colorIndex": 2, "cells": [{ "dx": 0, "dy": 0 }, { "dx": 0, "dy": 1 }, { "dx": 1, "dy": 1 }] },
+    { "id": "s_l_tr",    "width": 2, "height": 2, "colorIndex": 2, "cells": [{ "dx": 1, "dy": 0 }, { "dx": 0, "dy": 1 }, { "dx": 1, "dy": 1 }] },
+    { "id": "s_l_bl",    "width": 2, "height": 2, "colorIndex": 2, "cells": [{ "dx": 0, "dy": 0 }, { "dx": 1, "dy": 0 }, { "dx": 0, "dy": 1 }] },
+    { "id": "s_l_br",    "width": 2, "height": 2, "colorIndex": 2, "cells": [{ "dx": 0, "dy": 0 }, { "dx": 1, "dy": 0 }, { "dx": 1, "dy": 1 }] }
+  ]
+}
