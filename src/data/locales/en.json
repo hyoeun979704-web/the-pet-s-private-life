@@ -1,0 +1,22 @@
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "loading": "Loading…"
+  },
+  "boot": {
+    "title": "The Pet's Private Life"
+  },
+  "loading": {
+    "tip": "What is your pet up to right now?"
+  },
+  "main": {
+    "welcome": "Welcome back, keeper!"
+  },
+  "offline": {
+    "title": "You're offline",
+    "body": "Please check your connection and try again.",
+    "retry": "Retry"
+  }
+}
