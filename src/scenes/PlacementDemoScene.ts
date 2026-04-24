@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DESIGN_TOKENS, PLACEMENT_CONFIG, type ResourceGainSource } from '@/config/Constants';
+import { DESIGN_TOKENS, PLACEMENT_CONFIG } from '@/config/Constants';
 import charactersData from '@/data/characters.json';
 import furnitureData from '@/data/furniture.json';
 import type { CharacterDef, MoodState } from '@/entities/Character';
@@ -15,12 +15,11 @@ import {
   type Rotation,
 } from '@/entities/Furniture';
 import type { RoomDef } from '@/entities/Room';
-import { createInitialSaveData, type SaveData } from '@/entities/SaveData';
 import { CharacterSystem } from '@/systems/CharacterSystem';
-import { EconomySystem, type GrantFn, type ResourceDelta } from '@/systems/EconomySystem';
-import { GameState } from '@/systems/GameState';
+import type { EconomySystem } from '@/systems/EconomySystem';
+import type { GameState } from '@/systems/GameState';
+import { getServices } from '@/systems/GameServices';
 import { PlacementSystem } from '@/systems/PlacementSystem';
-import { MemorySaveBackend, SaveSystem } from '@/systems/SaveSystem';
 import { compareDepth } from '@/utils/DepthSort';
 import { cozyScore } from '@/utils/CozyScore';
 import { gridToScreen, screenToGrid, type GridPos } from '@/utils/IsometricUtil';
@@ -40,31 +39,6 @@ function moodAlpha(mood: MoodState): number {
     case 'tired': return 0.6;
     default: return 1;
   }
-}
-
-/**
- * Demo-local version of the server addResources semantics: merges deltas
- * into the save's resources + dailyLimits counters. In production the
- * server owns this mutation and we'd just refresh from Firestore.
- */
-function mergeGrant(
-  save: SaveData,
-  _source: ResourceGainSource,
-  deltas: ResourceDelta,
-): SaveData {
-  const resources = { ...save.resources };
-  let { snackEarned, starDustEarned } = save.dailyLimits;
-  (Object.keys(deltas) as Array<keyof typeof deltas>).forEach((key) => {
-    const add = deltas[key] ?? 0;
-    resources[key] = (resources[key] ?? 0) + add;
-    if (key === 'snack') snackEarned += add;
-    if (key === 'starDust') starDustEarned += add;
-  });
-  return {
-    ...save,
-    resources,
-    dailyLimits: { ...save.dailyLimits, snackEarned, starDustEarned },
-  };
 }
 
 export class PlacementDemoScene extends Phaser.Scene {
@@ -142,19 +116,10 @@ export class PlacementDemoScene extends Phaser.Scene {
   }
 
   private initGameState(): void {
-    const backend = new MemorySaveBackend();
-    const saveSystem = new SaveSystem({ backend, now: () => this.time.now, saveRetries: 1 });
-    const initial = createInitialSaveData('demo-player', this.time.now);
-    this.gameState = new GameState(initial, saveSystem);
-
-    const grantFn: GrantFn = async (source, deltas) => {
-      await this.gameState.patch((d) => mergeGrant(d, source, deltas));
-      return { ok: true, granted: deltas };
-    };
-    this.economy = new EconomySystem({
-      grantFn,
-      getSave: () => this.gameState.get(),
-    });
+    const services = getServices();
+    if (!services) throw new Error('GameServices not initialized; check main.ts');
+    this.gameState = services.gameState;
+    this.economy = services.economy;
     this.unsubState = this.gameState.subscribe(() => this.refreshResourceHud());
   }
 
