@@ -395,10 +395,26 @@ analytics.log('minigame_end', {
 
 ## 📢 광고 시스템
 
-v1 정책 유지(보상형만, 강제 없음, 실패 시 무보상).
-추가 규약:
-- **광고 필터**: AdMob 설정에서 `alcohol`, `dating`, `gambling`, `sexual` 카테고리 차단
-- **광고 실패 fallback**: 3회 연속 로드 실패 시 "잠시 후 다시 시도해주세요" 토스트
+**보상형만 사용. 강제·인터스티셜·배너 모두 금지.** 실패 시 무보상.
+
+### 보상형 광고 5종 (β에서 전부 활성, MVP/α에서는 일부만)
+
+| # | 배치 (`placement`) | 위치 | 보상 | 일일 한도 | 활성 단계 |
+|---|---|---|---|---|---|
+| 1 | `fatigue_restore` | 피로도 부족 모달 | 피로도 +3 | 3회 | α부터 |
+| 2 | `quiz_extra_session` | 퀴즈 일일 한도 초과 시 | 퀴즈 1세션 추가 | 1회 | α부터 |
+| 3 | `merge_boost` | 머지 게임 종료 화면 | 보상 2배 (`starDust ×2`) | 2회 | β부터 |
+| 4 | `block_continue` | 블록 퍼즐 실패 시 | 1회 이어하기 | 3회 | β부터 |
+| 5 | `gacha_ticket_chance` | 가챠 화면 | 50% 확률로 `gachaTicket: 1` | 1회 | β부터 |
+
+> 총 10회/일. 유저 체감 과부하 방지 + AdMob eCPM 안정성 확보 목적.
+
+### 운영 규약
+
+- **광고 필터**: AdMob 콘솔에서 `alcohol`, `dating`, `gambling`, `sexual`, `politics` 카테고리 차단.
+- **광고 실패 fallback**: 3회 연속 로드 실패 시 "잠시 후 다시 시도해주세요" 토스트 + 해당 세션 동안 그 배치 버튼 비활성.
+- **분석**: 각 배치마다 `ad_request` / `ad_impression` / `ad_reward` 이벤트에 `placement` 파라미터 필수.
+- **테스트 모드**: 개발 빌드(`VITE_ENV=development`)에서는 AdMob 테스트 광고 ID 고정.
 
 ---
 
