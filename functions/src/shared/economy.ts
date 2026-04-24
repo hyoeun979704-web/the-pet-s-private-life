@@ -1,0 +1,51 @@
+// -----------------------------------------------------------------------------
+// Server-side economy constants.
+//
+// IMPORTANT: These MUST stay in sync with src/config/Constants.ts.
+// A Vitest check in the main workspace (tests/economy-sync.test.ts)
+// imports both and asserts deep equality.
+// -----------------------------------------------------------------------------
+
+export const RESOURCE_KEYS = [
+  'snack',
+  'starDust',
+  'magicStone',
+  'magicShard',
+  'gachaTicket',
+] as const;
+export type ResourceKey = (typeof RESOURCE_KEYS)[number];
+
+export const MAX_RESOURCE_GAIN_PER_SOURCE: Record<
+  string,
+  Partial<Record<ResourceKey, number>>
+> = {
+  block_puzzle: { snack: 15 },
+  merge_game: { starDust: 50 },
+  quiz: { magicShard: 10, gachaTicket: 1 },
+  daily_mission: { snack: 30, starDust: 10 },
+  level_up: { magicStone: 3, gachaTicket: 1 },
+  login_bonus: { snack: 20, starDust: 5, magicStone: 1 },
+  ad_reward: { snack: 10, starDust: 5 },
+};
+
+export const DAILY_LIMITS = {
+  snack: 200,
+  starDust: 50,
+  quizSessions: 1,
+} as const;
+
+export const ACTIVITY_COSTS = {
+  blockPuzzle: 1,
+  mergeGame: 2,
+  quiz: 4,
+} as const;
+export type FatigueActivity = keyof typeof ACTIVITY_COSTS;
+
+export const GACHA = {
+  costMagicStone: 1,
+  pityLimit: 20,
+  rates: { normal: 0.7, rare: 0.25, legendary: 0.05 },
+} as const;
+
+/** Cap used when returning placed furniture to the inventory. */
+export const INVENTORY_STORAGE_SLOTS = 100;

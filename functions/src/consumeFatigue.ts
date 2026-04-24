@@ -1,15 +1,10 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { ACTIVITY_COSTS, type FatigueActivity } from './shared/economy';
 import { playerDocRef, requireAuthUid } from './util';
-
-const ACTIVITY_COSTS: Record<string, number> = {
-  blockPuzzle: 1,
-  mergeGame: 2,
-  quiz: 4,
-};
 
 interface Payload {
   defId: string;
-  activity: keyof typeof ACTIVITY_COSTS;
+  activity: FatigueActivity;
 }
 
 export const consumeFatigue = onCall<Payload>(async (req) => {
