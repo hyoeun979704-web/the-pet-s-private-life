@@ -1,0 +1,75 @@
+{
+  "items": [
+    {
+      "id": "furn_rug_basic",
+      "nameKey": "furniture.rug_basic",
+      "category": "floor",
+      "grade": "normal",
+      "footprintW": 2,
+      "footprintH": 2,
+      "priceSnack": 30,
+      "cozyScore": 5,
+      "colorHex": "#FFC8DD"
+    },
+    {
+      "id": "furn_cushion_cat",
+      "nameKey": "furniture.cushion_cat",
+      "category": "floor",
+      "grade": "normal",
+      "footprintW": 1,
+      "footprintH": 1,
+      "priceSnack": 20,
+      "cozyScore": 3,
+      "colorHex": "#FAEDCB"
+    },
+    {
+      "id": "furn_lamp_warm",
+      "nameKey": "furniture.lamp_warm",
+      "category": "decor",
+      "grade": "rare",
+      "footprintW": 1,
+      "footprintH": 1,
+      "priceStarDust": 15,
+      "cozyScore": 8,
+      "colorHex": "#A0C4FF"
+    },
+    {
+      "id": "furn_bed_pet",
+      "nameKey": "furniture.bed_pet",
+      "category": "floor",
+      "grade": "rare",
+      "footprintW": 2,
+      "footprintH": 3,
+      "priceStarDust": 25,
+      "cozyScore": 12,
+      "colorHex": "#B9FBC0"
+    },
+    {
+      "id": "furn_tree_cherry",
+      "nameKey": "furniture.tree_cherry",
+      "category": "decor",
+      "grade": "legendary",
+      "footprintW": 2,
+      "footprintH": 2,
+      "priceStarDust": 80,
+      "cozyScore": 25,
+      "colorHex": "#FFADAD"
+    }
+  ],
+  "rooms": [
+    {
+      "id": "room_living",
+      "nameKey": "rooms.living",
+      "gridWidth": 8,
+      "gridHeight": 8,
+      "unlockLevel": 1
+    },
+    {
+      "id": "room_bedroom",
+      "nameKey": "rooms.bedroom",
+      "gridWidth": 6,
+      "gridHeight": 6,
+      "unlockLevel": 4
+    }
+  ]
+}
