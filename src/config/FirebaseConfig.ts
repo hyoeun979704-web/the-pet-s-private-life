@@ -1,12 +1,31 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, signInAnonymously, type Auth } from 'firebase/auth';
+import {
+  getAuth,
+  signInAnonymously,
+  signInWithPopup,
+  GoogleAuthProvider,
+  linkWithPopup,
+  onAuthStateChanged,
+  type Auth,
+  type User,
+} from 'firebase/auth';
 import { getAnalytics, isSupported, type Analytics } from 'firebase/analytics';
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  type Firestore,
+} from 'firebase/firestore';
+import type { SaveData } from '@/entities/SaveData';
+import type { SaveBackend } from '@/systems/SaveSystem';
 import { logger } from '@/utils/Logger';
 import { ENV, firebaseConfigured } from './Env';
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let analytics: Analytics | null = null;
+let firestore: Firestore | null = null;
 
 export async function initFirebase(): Promise<void> {
   if (!firebaseConfigured()) {
@@ -16,12 +35,13 @@ export async function initFirebase(): Promise<void> {
   try {
     app = initializeApp(ENV.firebase);
     auth = getAuth(app);
+    firestore = getFirestore(app);
     const supported = await isSupported();
     if (supported) {
       analytics = getAnalytics(app);
     }
     const cred = await signInAnonymously(auth);
-    logger.info('firebase.signedIn', { uid: cred.user.uid });
+    logger.info('firebase.signedIn', { uid: cred.user.uid, anonymous: cred.user.isAnonymous });
   } catch (err) {
     logger.error('firebase.initFailed', err);
   }
@@ -37,4 +57,65 @@ export function getFirebaseAuth(): Auth | null {
 
 export function getFirebaseAnalytics(): Analytics | null {
   return analytics;
+}
+
+export function getFirebaseFirestore(): Firestore | null {
+  return firestore;
+}
+
+export function currentUser(): User | null {
+  return auth?.currentUser ?? null;
+}
+
+export function onAuthChange(listener: (user: User | null) => void): () => void {
+  if (!auth) {
+    listener(null);
+    return () => undefined;
+  }
+  return onAuthStateChanged(auth, listener);
+}
+
+/**
+ * If the current user is anonymous, links the Google credential to preserve
+ * the guest playerId (uid). Otherwise performs a standard Google sign-in.
+ */
+export async function signInOrLinkGoogle(): Promise<User | null> {
+  if (!auth) return null;
+  const provider = new GoogleAuthProvider();
+  const user = auth.currentUser;
+  try {
+    if (user?.isAnonymous) {
+      const cred = await linkWithPopup(user, provider);
+      logger.info('firebase.linked', { uid: cred.user.uid });
+      return cred.user;
+    }
+    const cred = await signInWithPopup(auth, provider);
+    logger.info('firebase.googleSignedIn', { uid: cred.user.uid });
+    return cred.user;
+  } catch (err) {
+    logger.error('firebase.googleFailed', err);
+    return null;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Firestore SaveBackend
+// -----------------------------------------------------------------------------
+
+export class FirestoreSaveBackend implements SaveBackend {
+  name = 'firestore';
+
+  async load(playerId: string): Promise<unknown | null> {
+    if (!firestore) return null;
+    const snap = await getDoc(doc(firestore, 'players', playerId));
+    return snap.exists() ? snap.data() : null;
+  }
+
+  async save(playerId: string, data: SaveData): Promise<void> {
+    if (!firestore) return;
+    // NOTE: Firestore security rules reject client writes to /players/{uid}.
+    // This path exists for seeding / dev-emulator only. Production mutations
+    // MUST go through Cloud Functions (addResources, consumeFatigue, rollGacha).
+    await setDoc(doc(firestore, 'players', playerId), data as unknown as Record<string, unknown>);
+  }
 }
