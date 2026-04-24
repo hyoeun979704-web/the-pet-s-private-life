@@ -112,9 +112,9 @@ export class MergeGameSystem {
         const here = this.cellAt(x, y);
         if (here) {
           const right = this.cellAt(x + 1, y);
-          if (right && right.level === here.level) return false;
+          if (right && mergedLevel(here.level, right.level) !== null) return false;
           const down = this.cellAt(x, y + 1);
-          if (down && down.level === here.level) return false;
+          if (down && mergedLevel(here.level, down.level) !== null) return false;
         }
       }
     }

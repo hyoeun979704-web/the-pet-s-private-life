@@ -111,6 +111,19 @@ describe('MergeGameSystem', () => {
     }
     expect(sys.isGameOver()).toBe(true);
   });
+
+  it('isGameOver: true even when adjacent lv-10 pairs exist (cannot merge further)', () => {
+    const sys = new MergeGameSystem({ initialFills: 0 });
+    const board = sys.getBoard() as unknown as (MergeItem | null)[][];
+    // Fill board entirely with lv-10. Neighbors match levels but mergedLevel
+    // returns null for 10+10 -> isGameOver must be true.
+    for (let y = 0; y < 5; y += 1) {
+      for (let x = 0; x < 5; x += 1) {
+        board[y]![x] = { id: `f_${x}_${y}`, level: 10 };
+      }
+    }
+    expect(sys.isGameOver()).toBe(true);
+  });
 });
 
 describe('MergeReward.starDustFor', () => {
