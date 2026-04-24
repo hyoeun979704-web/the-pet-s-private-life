@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { DESIGN_TOKENS, MAX_RESOURCE_GAIN_PER_SOURCE } from '@/config/Constants';
 import mergeLevelsData from '@/data/mergeLevels.json';
-import { MergeGameSystem, type MergeCell } from '@/systems/MergeGameSystem';
+import type { MergeItem } from '@/entities/MergeItem';
+import { MergeGameSystem } from '@/systems/MergeGameSystem';
 import { starDustFor } from '@/utils/MergeReward';
 import { getServices } from '@/systems/GameServices';
 import { i18n } from '@/systems/I18nSystem';
@@ -148,8 +149,7 @@ export class MergeGameScene extends Phaser.Scene {
     }
   }
 
-  private makeItemSprite(x: number, y: number, cell: MergeCell): Phaser.GameObjects.Container | null {
-    if (!cell) return null;
+  private makeItemSprite(x: number, y: number, cell: MergeItem): Phaser.GameObjects.Container {
     const cx = this.boardOriginX + x * CELL_PX + CELL_PX / 2;
     const cy = this.boardOriginY + y * CELL_PX + CELL_PX / 2;
     const container = this.add.container(cx, cy);
