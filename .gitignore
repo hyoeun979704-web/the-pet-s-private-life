@@ -32,15 +32,31 @@ Thumbs.db
 coverage/
 .nyc_output/
 
-# Capacitor / Android / iOS
-android/
-ios/
+# Capacitor / Android / iOS (commit project files, ignore build artifacts)
 capacitor.config.json.local
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/release/
+android/captures/
+ios/App/build/
+ios/App/Pods/
+ios/App/App/public/
+ios/DerivedData/
+
+# Signing keys (NEVER commit)
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+key.properties
 
 # Firebase
 .firebase/
 firebase-debug.log
 firestore-debug.log
+functions/node_modules/
 
 # Misc
 *.tsbuildinfo
