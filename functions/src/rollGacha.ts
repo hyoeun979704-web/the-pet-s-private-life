@@ -1,20 +1,30 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { GACHA } from './shared/economy';
+import { GACHA_POOL, type GachaGrade } from './shared/gachaPool';
 import { playerDocRef, requireAuthUid } from './util';
 
-const RATES = { normal: 0.7, rare: 0.25, legendary: 0.05 };
-const COST_MAGIC_STONE = 1;
-const PITY_LIMIT = 20;
+const DUPLICATE_SHARD_REWARD: Record<GachaGrade, number> = {
+  normal: 1,
+  rare: 3,
+  legendary: 10,
+};
 
-type Grade = keyof typeof RATES;
-
-function rollGrade(pity: number): Grade {
-  if (pity + 1 >= PITY_LIMIT) {
-    return Math.random() < RATES.legendary / (RATES.rare + RATES.legendary) ? 'legendary' : 'rare';
+function rollGrade(normalStreak: number): GachaGrade {
+  // Guarantee at least rare when normalStreak + 1 reaches the pity limit.
+  if (normalStreak + 1 >= GACHA.pityLimit) {
+    const denom = GACHA.rates.rare + GACHA.rates.legendary;
+    return Math.random() < GACHA.rates.legendary / denom ? 'legendary' : 'rare';
   }
   const r = Math.random();
-  if (r < RATES.legendary) return 'legendary';
-  if (r < RATES.legendary + RATES.rare) return 'rare';
+  if (r < GACHA.rates.legendary) return 'legendary';
+  if (r < GACHA.rates.legendary + GACHA.rates.rare) return 'rare';
   return 'normal';
+}
+
+function pickFromPool(grade: GachaGrade): string {
+  const pool = GACHA_POOL[grade];
+  const idx = Math.floor(Math.random() * pool.length);
+  return pool[idx] as string;
 }
 
 export const rollGacha = onCall(async (req) => {
@@ -26,18 +36,49 @@ export const rollGacha = onCall(async (req) => {
       throw new HttpsError('not-found', 'player document missing');
     }
     const data = snap.data() ?? {};
-    const resources = (data.resources as { magicStone?: number } | undefined) ?? {};
+    const resources = (data.resources as {
+      magicStone?: number;
+      magicShard?: number;
+    } | undefined) ?? {};
     const pity = (data.gachaPity as number | undefined) ?? 0;
+    const owned =
+      (data.characters as Array<{ defId: string }> | undefined) ?? [];
+
     const stone = resources.magicStone ?? 0;
-    if (stone < COST_MAGIC_STONE) {
+    if (stone < GACHA.costMagicStone) {
       throw new HttpsError('failed-precondition', 'not enough magicStone');
     }
+
     const grade = rollGrade(pity);
+    const defId = pickFromPool(grade);
+    const ownsAlready = owned.some((c) => c.defId === defId);
+
+    // Pity counts CONSECUTIVE normals. Any rare/legendary resets it.
     const nextPity = grade === 'normal' ? pity + 1 : 0;
-    tx.update(ref, {
-      'resources.magicStone': stone - COST_MAGIC_STONE,
+    const shardGain = ownsAlready ? DUPLICATE_SHARD_REWARD[grade] : 0;
+
+    const updates: Record<string, unknown> = {
+      'resources.magicStone': stone - GACHA.costMagicStone,
       gachaPity: nextPity,
-    });
-    return { ok: true, grade, pity: nextPity };
+    };
+
+    if (ownsAlready) {
+      updates['resources.magicShard'] = (resources.magicShard ?? 0) + shardGain;
+    } else {
+      updates.characters = [
+        ...owned,
+        { defId, fatigue: 0, lastInteractAt: Date.now() },
+      ];
+    }
+
+    tx.update(ref, updates);
+    return {
+      ok: true,
+      grade,
+      defId,
+      isNew: !ownsAlready,
+      shardGain,
+      pity: nextPity,
+    };
   });
 });
