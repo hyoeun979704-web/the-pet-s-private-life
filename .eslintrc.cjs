@@ -35,5 +35,5 @@ module.exports = {
     'class-methods-use-this': 'off',
     'max-classes-per-file': 'off',
   },
-  ignorePatterns: ['dist', 'node_modules', 'android', 'ios', '*.cjs', '*.config.ts'],
+  ignorePatterns: ['dist', 'node_modules', 'android', 'ios', 'functions', '*.cjs', '*.config.ts'],
 };
