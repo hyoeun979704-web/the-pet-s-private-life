@@ -15,12 +15,16 @@
     "welcome": "Welcome back, keeper!",
     "enter_placement": "Place furniture",
     "enter_block": "Block puzzle",
-    "enter_merge": "Merge"
+    "enter_merge": "Merge",
+    "enter_quiz": "Quiz"
   },
   "block": {
     "end": "End"
   },
   "merge": {
+    "end": "End"
+  },
+  "quiz": {
     "end": "End"
   },
   "placement": {

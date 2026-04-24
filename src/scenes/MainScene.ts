@@ -50,6 +50,16 @@ export class MainScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     mergeBtn.on('pointerup', () => this.scene.start('MergeGameScene'));
 
+    const quizBtn = this.add
+      .text(width / 2, height / 2 + 220, `[ ${i18n.t('main.enter_quiz', 'Quiz')} ]`, {
+        fontFamily: DESIGN_TOKENS.font.family,
+        fontSize: `${DESIGN_TOKENS.font.sizeLg}px`,
+        color: DESIGN_TOKENS.color.primaryDark,
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    quizBtn.on('pointerup', () => this.scene.start('QuizScene'));
+
     onNetworkChange((online) => {
       if (!online) this.scene.start('OfflineScene');
     });

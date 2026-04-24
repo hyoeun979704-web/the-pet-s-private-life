@@ -15,12 +15,16 @@
     "welcome": "어서 오세요, 집사님!",
     "enter_placement": "배치하기",
     "enter_block": "블록 퍼즐",
-    "enter_merge": "머지 게임"
+    "enter_merge": "머지 게임",
+    "enter_quiz": "퀴즈"
   },
   "block": {
     "end": "끝내기"
   },
   "merge": {
+    "end": "끝내기"
+  },
+  "quiz": {
     "end": "끝내기"
   },
   "placement": {

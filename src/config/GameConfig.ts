@@ -6,6 +6,7 @@ import { OfflineScene } from '@/scenes/OfflineScene';
 import { PlacementDemoScene } from '@/scenes/PlacementDemoScene';
 import { BlockPuzzleScene } from '@/scenes/minigames/BlockPuzzleScene';
 import { MergeGameScene } from '@/scenes/minigames/MergeGameScene';
+import { QuizScene } from '@/scenes/minigames/QuizScene';
 import { DESIGN_TOKENS, GAME_META } from './Constants';
 
 export function createGameConfig(): Phaser.Types.Core.GameConfig {
@@ -36,6 +37,7 @@ export function createGameConfig(): Phaser.Types.Core.GameConfig {
       PlacementDemoScene,
       BlockPuzzleScene,
       MergeGameScene,
+      QuizScene,
     ],
   };
 }
