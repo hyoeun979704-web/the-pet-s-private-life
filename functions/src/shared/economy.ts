@@ -61,3 +61,10 @@ export const FATIGUE_MAX_BY_GRADE = {
 
 /** Cap used when returning placed furniture to the inventory. */
 export const INVENTORY_STORAGE_SLOTS = 100;
+
+/**
+ * Per-call cap on magicShard awarded for a duplicate-pull in rollGacha.
+ * Defense in depth: keeps a single roll from minting unbounded shards
+ * even if DUPLICATE_SHARD_REWARD is later mis-tuned.
+ */
+export const MAX_GACHA_SHARD_PER_CALL = 10;

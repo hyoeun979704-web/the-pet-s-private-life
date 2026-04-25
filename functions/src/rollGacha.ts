@@ -1,5 +1,9 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
-import { FATIGUE_MAX_BY_GRADE, GACHA } from './shared/economy';
+import {
+  FATIGUE_MAX_BY_GRADE,
+  GACHA,
+  MAX_GACHA_SHARD_PER_CALL,
+} from './shared/economy';
 import { GACHA_POOL, type GachaGrade } from './shared/gachaPool';
 import { playerDocRef, requireAuthUid } from './util';
 
@@ -8,6 +12,12 @@ const DUPLICATE_SHARD_REWARD: Record<GachaGrade, number> = {
   rare: 3,
   legendary: 10,
 };
+
+// Defense in depth: even if DUPLICATE_SHARD_REWARD is mis-tuned later,
+// no single roll can mint more than MAX_GACHA_SHARD_PER_CALL shards.
+function cappedShardReward(grade: GachaGrade): number {
+  return Math.min(DUPLICATE_SHARD_REWARD[grade], MAX_GACHA_SHARD_PER_CALL);
+}
 
 function rollGrade(normalStreak: number): GachaGrade {
   // Guarantee at least rare when normalStreak + 1 reaches the pity limit.
@@ -55,7 +65,7 @@ export const rollGacha = onCall(async (req) => {
 
     // Pity counts CONSECUTIVE normals. Any rare/legendary resets it.
     const nextPity = grade === 'normal' ? pity + 1 : 0;
-    const shardGain = ownsAlready ? DUPLICATE_SHARD_REWARD[grade] : 0;
+    const shardGain = ownsAlready ? cappedShardReward(grade) : 0;
 
     const updates: Record<string, unknown> = {
       'resources.magicStone': stone - GACHA.costMagicStone,

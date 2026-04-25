@@ -1,7 +1,10 @@
 /* eslint-disable import/no-relative-packages */
 import { describe, it, expect } from 'vitest';
 import charactersData from '@/data/characters.json';
-import { FATIGUE_MAX_BY_GRADE } from '../functions/src/shared/economy';
+import {
+  FATIGUE_MAX_BY_GRADE,
+  MAX_GACHA_SHARD_PER_CALL,
+} from '../functions/src/shared/economy';
 import { GACHA_POOL } from '../functions/src/shared/gachaPool';
 /* eslint-enable import/no-relative-packages */
 
@@ -47,5 +50,12 @@ describe('gacha-pool-sync: client characters.json vs functions/shared', () => {
     rows.forEach((r) => {
       expect(r.fatigueMax, `${r.id} fatigueMax`).toBe(FATIGUE_MAX_BY_GRADE[r.grade]);
     });
+  });
+
+  it('MAX_GACHA_SHARD_PER_CALL is at least the highest legendary duplicate reward', () => {
+    // The hardcoded DUPLICATE_SHARD_REWARD in rollGacha sets legendary=10.
+    // If anyone bumps that without bumping the cap, the cap silently
+    // truncates the reward — making this test the canary.
+    expect(MAX_GACHA_SHARD_PER_CALL).toBeGreaterThanOrEqual(10);
   });
 });
