@@ -10,21 +10,25 @@ import { logger } from '@/utils/Logger';
 
 function mergeGrantLocal(
   save: SaveData,
-  _source: ResourceGainSource,
+  source: ResourceGainSource,
   deltas: ResourceDelta,
 ): SaveData {
   const resources = { ...save.resources };
-  let { snackEarned, starDustEarned } = save.dailyLimits;
+  let { snackEarned, starDustEarned, quizSessionsUsed } = save.dailyLimits;
   (Object.keys(deltas) as Array<keyof typeof deltas>).forEach((key) => {
     const add = deltas[key] ?? 0;
     resources[key] = (resources[key] ?? 0) + add;
     if (key === 'snack') snackEarned += add;
     if (key === 'starDust') starDustEarned += add;
   });
+  // Mirror server addResources behavior: a 'quiz' grant burns the daily
+  // session counter regardless of payload (closes the fail-to-peek loop
+  // for dev/local play).
+  if (source === 'quiz') quizSessionsUsed += 1;
   return {
     ...save,
     resources,
-    dailyLimits: { ...save.dailyLimits, snackEarned, starDustEarned },
+    dailyLimits: { ...save.dailyLimits, snackEarned, starDustEarned, quizSessionsUsed },
   };
 }
 
