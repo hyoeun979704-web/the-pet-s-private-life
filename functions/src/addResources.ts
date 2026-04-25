@@ -69,6 +69,7 @@ export const addResources = onCall<Payload>(async (req) => {
       resetAtMs?: number;
       snackEarned?: number;
       starDustEarned?: number;
+      quizSessionsUsed?: number;
     } | undefined) ?? {};
 
     // Reset daily counters if we're past midnight.
@@ -77,6 +78,7 @@ export const addResources = onCall<Payload>(async (req) => {
     const pastMidnight = now >= resetAtMs;
     let snackEarned = pastMidnight ? 0 : (daily.snackEarned ?? 0);
     let starDustEarned = pastMidnight ? 0 : (daily.starDustEarned ?? 0);
+    let quizSessionsUsed = pastMidnight ? 0 : (daily.quizSessionsUsed ?? 0);
 
     const dSnack = normalized.snack ?? 0;
     const dStar = normalized.starDust ?? 0;
@@ -91,6 +93,18 @@ export const addResources = onCall<Payload>(async (req) => {
         'resource-exhausted',
         `daily starDust cap reached (${DAILY_LIMITS.starDust})`,
       );
+    }
+    if (source === 'quiz') {
+      // One quiz grant call per source 'quiz' = one completed session.
+      // Server enforces DAILY_LIMITS.quizSessions. Ad-extension is wired
+      // through a separate path in PART 9 (it bumps the cap server-side).
+      if (quizSessionsUsed + 1 > DAILY_LIMITS.quizSessions) {
+        throw new HttpsError(
+          'resource-exhausted',
+          `daily quiz session cap reached (${DAILY_LIMITS.quizSessions})`,
+        );
+      }
+      quizSessionsUsed += 1;
     }
     snackEarned += dSnack;
     starDustEarned += dStar;
@@ -108,6 +122,7 @@ export const addResources = onCall<Payload>(async (req) => {
       'dailyLimits.resetAtMs': pastMidnight ? nextMidnightMs(now) : resetAtMs,
       'dailyLimits.snackEarned': snackEarned,
       'dailyLimits.starDustEarned': starDustEarned,
+      'dailyLimits.quizSessionsUsed': quizSessionsUsed,
     });
     return { ok: true, source, granted: normalized };
   });

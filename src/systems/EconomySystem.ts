@@ -75,8 +75,16 @@ export class EconomySystem {
     if (todaySnack > DAILY_LIMITS.snack || todayStar > DAILY_LIMITS.starDust) {
       return { ok: false, reason: 'daily-limit' };
     }
+    if (source === 'quiz' && save.dailyLimits.quizSessionsUsed >= DAILY_LIMITS.quizSessions) {
+      return { ok: false, reason: 'daily-limit' };
+    }
 
     return { ok: true, granted: deltas };
+  }
+
+  /** True if a fresh quiz session can still be redeemed today. */
+  canStartQuizSession(): boolean {
+    return this.getSave().dailyLimits.quizSessionsUsed < DAILY_LIMITS.quizSessions;
   }
 
   async grant(

@@ -49,6 +49,14 @@ export class QuizScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(DESIGN_TOKENS.color.bg);
     this.input.mouse?.disableContextMenu();
 
+    // Daily-cap guard: avoid wasting the user's time + a server round-trip
+    // for a session whose grant we already know will be rejected.
+    const services = getServices();
+    if (services && !services.economy.canStartQuizSession()) {
+      this.showCapReachedAndReturn();
+      return;
+    }
+
     const pool = quizData.questions as unknown as QuizQuestion[];
     this.system = new QuizSystem(pool, { sessionSize: 10, wrongLimit: 3 });
     this.system.start();
@@ -58,8 +66,20 @@ export class QuizScene extends Phaser.Scene {
     this.renderCurrent();
   }
 
+  private showCapReachedAndReturn(): void {
+    const { width, height } = this.scale;
+    this.add
+      .text(width / 2, height / 2, i18n.t('quiz.daily_cap', '오늘은 이미 퀴즈를 풀었어요. 내일 다시 만나요!'), {
+        fontFamily: DESIGN_TOKENS.font.family,
+        fontSize: `${DESIGN_TOKENS.font.sizeLg}px`,
+        color: DESIGN_TOKENS.color.textPrimary,
+      })
+      .setOrigin(0.5);
+    this.time.delayedCall(1500, () => this.scene.start('MainScene'));
+  }
+
   override update(): void {
-    if (this.ending || this.awaitingNext) return;
+    if (this.ending || this.awaitingNext || !this.system) return;
     const remaining = this.secondsRemainingForQuestion();
     this.timerText.setText(`⏱ ${remaining}s`);
     if (remaining <= 0) this.onTimeoutCurrent();
@@ -168,22 +188,31 @@ export class QuizScene extends Phaser.Scene {
 
   private onPick(index: number): void {
     if (this.awaitingNext || this.ending) return;
+    const explanation = this.system.current()?.explanation;
     const result = this.system.answer(index);
-    this.flashOutcome(result.outcome, index);
+    this.flashOutcome(result.outcome, index, explanation);
     this.advanceAfterDelay(result.sessionEnded);
   }
 
   private onTimeoutCurrent(): void {
     if (this.awaitingNext || this.ending) return;
+    const explanation = this.system.current()?.explanation;
     const result = this.system.timeout();
-    this.flashOutcome(result.outcome, -1);
+    this.flashOutcome(result.outcome, -1, explanation);
     this.advanceAfterDelay(result.sessionEnded);
   }
 
-  private flashOutcome(outcome: AnswerOutcome, pickedIndex: number): void {
+  private flashOutcome(
+    outcome: AnswerOutcome,
+    pickedIndex: number,
+    explanation: string | undefined,
+  ): void {
     let correctIdx = -1;
-    if (outcome.kind === 'wrong') correctIdx = outcome.correctIndex;
-    else if (outcome.kind === 'correct') correctIdx = pickedIndex;
+    if (outcome.kind === 'wrong' || outcome.kind === 'timeout') {
+      correctIdx = outcome.correctIndex;
+    } else if (outcome.kind === 'correct') {
+      correctIdx = pickedIndex;
+    }
 
     // Highlight the correct answer green; if user picked a wrong one,
     // also flag their choice red.
@@ -194,18 +223,25 @@ export class QuizScene extends Phaser.Scene {
       }
     });
 
+    let label: string;
+    let color: string;
     if (outcome.kind === 'correct') {
-      this.feedbackText.setColor(DESIGN_TOKENS.color.success).setText('정답! 🎉');
+      label = '정답! 🎉';
+      color = DESIGN_TOKENS.color.success;
     } else if (outcome.kind === 'wrong') {
-      this.feedbackText.setColor(DESIGN_TOKENS.color.danger).setText('오답');
+      label = '오답';
+      color = DESIGN_TOKENS.color.danger;
     } else {
-      this.feedbackText.setColor(DESIGN_TOKENS.color.danger).setText('시간 초과');
+      label = '시간 초과';
+      color = DESIGN_TOKENS.color.danger;
     }
+    const text = explanation ? `${label} — ${explanation}` : label;
+    this.feedbackText.setColor(color).setText(text);
   }
 
   private advanceAfterDelay(sessionEnded: boolean): void {
     this.awaitingNext = true;
-    this.time.delayedCall(1200, () => {
+    this.time.delayedCall(2400, () => {
       this.awaitingNext = false;
       if (sessionEnded) {
         const reason =

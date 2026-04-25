@@ -25,7 +25,8 @@
     "end": "End"
   },
   "quiz": {
-    "end": "End"
+    "end": "End",
+    "daily_cap": "You've already taken today's quiz. See you tomorrow!"
   },
   "placement": {
     "selected": "Selected",

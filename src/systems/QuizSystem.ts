@@ -9,7 +9,7 @@ export interface QuizSystemOptions {
 export type AnswerOutcome =
   | { kind: 'correct' }
   | { kind: 'wrong'; correctIndex: number }
-  | { kind: 'timeout' };
+  | { kind: 'timeout'; correctIndex: number };
 
 export interface AnswerResult {
   outcome: AnswerOutcome;
@@ -113,7 +113,7 @@ export class QuizSystem {
     if (!q) throw new Error('timeout() called after session ended');
     this.wrong += 1;
     const idx = this.index;
-    return this.afterAnswer({ kind: 'timeout' }, idx);
+    return this.afterAnswer({ kind: 'timeout', correctIndex: q.correctIndex }, idx);
   }
 
   private afterAnswer(outcome: AnswerOutcome, idx: number): AnswerResult {

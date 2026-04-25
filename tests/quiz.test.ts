@@ -79,11 +79,15 @@ describe('QuizSystem', () => {
     expect(sys.results().endedBy).toBe('wrong-limit');
   });
 
-  it('timeout() counts as wrong', () => {
+  it('timeout() counts as wrong and exposes correctIndex', () => {
     const sys = new QuizSystem(POOL, { sessionSize: 2, wrongLimit: 3, rand: () => 0 });
     sys.start();
+    const cur = sys.current()!;
     const res = sys.timeout();
     expect(res.outcome.kind).toBe('timeout');
+    if (res.outcome.kind === 'timeout') {
+      expect(res.outcome.correctIndex).toBe(cur.correctIndex);
+    }
     expect(sys.results().wrong).toBe(1);
   });
 

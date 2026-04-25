@@ -95,4 +95,23 @@ describe('EconomySystem', () => {
     const sys = new EconomySystem({ grantFn: grantOk(), getSave: () => save });
     expect(sys.dailyRemaining()).toEqual({ snack: 20, starDust: 5 });
   });
+
+  it('canStartQuizSession is true when cap not reached', () => {
+    const sys = new EconomySystem({ grantFn: grantOk(), getSave: () => makeSave() });
+    expect(sys.canStartQuizSession()).toBe(true);
+  });
+
+  it('canStartQuizSession + canGrant block quiz once daily session cap reached', () => {
+    const save = makeSave({
+      dailyLimits: {
+        resetAtMs: 0, snackEarned: 0, starDustEarned: 0,
+        quizSessionsUsed: 1, adFatigueUsed: 0,
+      },
+    });
+    const sys = new EconomySystem({ grantFn: grantOk(), getSave: () => save });
+    expect(sys.canStartQuizSession()).toBe(false);
+    const res = sys.canGrant('quiz', { magicShard: 1 });
+    expect(res.ok).toBe(false);
+    expect(res.reason).toBe('daily-limit');
+  });
 });
