@@ -1,6 +1,7 @@
 /* eslint-disable import/no-relative-packages */
 import { describe, it, expect } from 'vitest';
 import charactersData from '@/data/characters.json';
+import { GACHA_POOL as CLIENT_POOL } from '@/data/gachaPool';
 import {
   FATIGUE_MAX_BY_GRADE,
   MAX_GACHA_SHARD_PER_CALL,
@@ -57,5 +58,11 @@ describe('gacha-pool-sync: client characters.json vs functions/shared', () => {
     // If anyone bumps that without bumping the cap, the cap silently
     // truncates the reward — making this test the canary.
     expect(MAX_GACHA_SHARD_PER_CALL).toBeGreaterThanOrEqual(10);
+  });
+
+  it('client pool mirrors server pool exactly', () => {
+    expect([...CLIENT_POOL.normal]).toEqual([...GACHA_POOL.normal]);
+    expect([...CLIENT_POOL.rare]).toEqual([...GACHA_POOL.rare]);
+    expect([...CLIENT_POOL.legendary]).toEqual([...GACHA_POOL.legendary]);
   });
 });
