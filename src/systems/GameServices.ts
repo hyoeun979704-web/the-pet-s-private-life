@@ -32,7 +32,7 @@ export function initDevServices(grantFn: GrantFn, now: () => number = () => Date
   });
   // Dev mode uses MockAdAdapter (always succeeds). PART 13 swaps in the
   // Capacitor AdMob plugin adapter.
-  const ads = new AdSystem({ adapter: new MockAdAdapter(), gameState });
+  const ads = new AdSystem({ adapter: new MockAdAdapter(), gameState, now });
   services = { saveSystem, gameState, economy, ads };
   return services;
 }

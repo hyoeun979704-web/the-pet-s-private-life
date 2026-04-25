@@ -123,7 +123,7 @@ export const MAX_RESOURCE_GAIN_PER_SOURCE = {
   // grants in EconomySystem.grantWithExp don't silently get rejected.
   level_up: { snack: 500, starDust: 50, magicStone: 3, gachaTicket: 1 },
   login_bonus: { snack: 20, starDust: 5, magicStone: 1 },
-  ad_reward: { snack: 10, starDust: 5 },
+  ad_reward: { snack: 10, starDust: 5, gachaTicket: 1 },
 } as const;
 
 /**

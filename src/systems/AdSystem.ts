@@ -31,6 +31,8 @@ export interface AdSystemOptions {
    * for the rest of the session (per ROADMAP §광고 시스템).
    */
   failureThreshold?: number;
+  /** Injected clock for deterministic tests. Defaults to Date.now. */
+  now?: () => number;
 }
 
 const PLACEMENTS: AdPlacementDef[] =
@@ -52,6 +54,8 @@ export class AdSystem {
 
   private readonly failureThreshold: number;
 
+  private readonly now: () => number;
+
   /** Consecutive failure count per placement (resets on successful watch). */
   private readonly fails: Map<AdPlacementId, number> = new Map();
 
@@ -62,6 +66,7 @@ export class AdSystem {
     this.adapter = opts.adapter;
     this.gameState = opts.gameState;
     this.failureThreshold = opts.failureThreshold ?? 3;
+    this.now = opts.now ?? (() => Date.now());
   }
 
   static getPlacement(id: AdPlacementId): AdPlacementDef | null {
@@ -74,8 +79,12 @@ export class AdSystem {
 
   /** Today's used count for `placement`, defaulting to 0. */
   usedToday(placement: AdPlacementId): number {
-    const adsUsed = this.gameState.get().dailyLimits.adsUsed ?? {};
-    return adsUsed[placement] ?? 0;
+    const daily = this.gameState.get().dailyLimits;
+    // Apply midnight reset locally — server is authoritative but the client
+    // shouldn't show stale 'cap reached' between midnight and the next
+    // server-side grant call.
+    if (this.now() >= daily.resetAtMs) return 0;
+    return (daily.adsUsed ?? {})[placement] ?? 0;
   }
 
   remainingToday(placement: AdPlacementId): number {

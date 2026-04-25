@@ -22,12 +22,12 @@ describe('AdSystem', () => {
   });
 
   it('canWatch true on a fresh save for an alpha placement', () => {
-    const ads = new AdSystem({ adapter: new MockAdAdapter(), gameState });
+    const ads = new AdSystem({ adapter: new MockAdAdapter(), gameState, now: () => 0 });
     expect(ads.canWatch('quiz_extra_session')).toBe(true);
   });
 
   it('watch returns ok and increments daily counter on success', async () => {
-    const ads = new AdSystem({ adapter: new MockAdAdapter(), gameState });
+    const ads = new AdSystem({ adapter: new MockAdAdapter(), gameState, now: () => 0 });
     const res = await ads.watch('fatigue_restore');
     expect(res.ok).toBe(true);
     expect(ads.usedToday('fatigue_restore')).toBe(1);
@@ -35,7 +35,7 @@ describe('AdSystem', () => {
   });
 
   it('watch refuses past the daily cap', async () => {
-    const ads = new AdSystem({ adapter: new MockAdAdapter(), gameState });
+    const ads = new AdSystem({ adapter: new MockAdAdapter(), gameState, now: () => 0 });
     // quiz_extra_session has dailyCap = 1
     await ads.watch('quiz_extra_session');
     const second = await ads.watch('quiz_extra_session');
@@ -44,7 +44,7 @@ describe('AdSystem', () => {
   });
 
   it('returns unknown-placement for an unrecognized id', async () => {
-    const ads = new AdSystem({ adapter: new MockAdAdapter(), gameState });
+    const ads = new AdSystem({ adapter: new MockAdAdapter(), gameState, now: () => 0 });
     const res = await ads.watch('not_a_placement' as never);
     expect(res.ok).toBe(false);
     expect(res.reason).toBe('unknown-placement');
@@ -54,6 +54,7 @@ describe('AdSystem', () => {
     const ads = new AdSystem({
       adapter: new FailingAdAdapter(1),
       gameState,
+      now: () => 0,
       failureThreshold: 3,
     });
     const first = await ads.watch('merge_boost');
@@ -68,6 +69,7 @@ describe('AdSystem', () => {
     const ads = new AdSystem({
       adapter: new FailingAdAdapter(5),
       gameState,
+      now: () => 0,
       failureThreshold: 3,
     });
     await ads.watch('merge_boost');
@@ -87,7 +89,7 @@ describe('AdSystem', () => {
         return calls === 3;
       },
     };
-    const ads = new AdSystem({ adapter: sometimes, gameState, failureThreshold: 3 });
+    const ads = new AdSystem({ adapter: sometimes, gameState, now: () => 0, failureThreshold: 3 });
     await ads.watch('block_continue'); // fail
     await ads.watch('block_continue'); // fail
     await ads.watch('block_continue'); // success — resets streak
@@ -101,7 +103,7 @@ describe('AdSystem', () => {
         throw new Error('SDK error');
       },
     };
-    const ads = new AdSystem({ adapter: throwing, gameState, failureThreshold: 2 });
+    const ads = new AdSystem({ adapter: throwing, gameState, now: () => 0, failureThreshold: 2 });
     const r1 = await ads.watch('gacha_ticket_chance');
     expect(r1.reason).toBe('unknown');
     await ads.watch('gacha_ticket_chance');
@@ -117,5 +119,25 @@ describe('AdSystem', () => {
       'merge_boost',
       'quiz_extra_session',
     ]);
+  });
+
+  it('local midnight reset zeroes usedToday past resetAtMs', async () => {
+    const adsBeforeMidnight = new AdSystem({
+      adapter: new MockAdAdapter(),
+      gameState,
+      now: () => 0,
+    });
+    await adsBeforeMidnight.watch('quiz_extra_session');
+    expect(adsBeforeMidnight.usedToday('quiz_extra_session')).toBe(1);
+
+    // Advance the AdSystem clock past resetAtMs.
+    const future = gameState.get().dailyLimits.resetAtMs + 1;
+    const adsAfterMidnight = new AdSystem({
+      adapter: new MockAdAdapter(),
+      gameState,
+      now: () => future,
+    });
+    expect(adsAfterMidnight.usedToday('quiz_extra_session')).toBe(0);
+    expect(adsAfterMidnight.canWatch('quiz_extra_session')).toBe(true);
   });
 });

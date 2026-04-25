@@ -207,19 +207,17 @@ export class GachaScene extends Phaser.Scene {
       return;
     }
     // 50% chance to award one gachaTicket via the ad_reward source.
+    // ads.watch() already burned the daily counter; we don't double-grant
+    // on a loss. On win we grant via server (ad_reward whitelist allows
+    // gachaTicket: 1).
     const won = Math.random() < 0.5;
     if (won) {
-      await services.economy.grant('ad_reward', { snack: 0 }); // count the watch even on draw
-      // ad_reward source caps don't include gachaTicket — patch directly
-      // since this is a placement-specific bonus and not a generic grant.
-      await services.gameState.patch((d) => ({
-        ...d,
-        resources: {
-          ...d.resources,
-          gachaTicket: d.resources.gachaTicket + 1,
-        },
-      }));
-      this.flashMessage(i18n.t('gacha.adChance_won', '🎉 가챠권 +1!'));
+      const grant = await services.economy.grant('ad_reward', { gachaTicket: 1 });
+      if (grant.ok) {
+        this.flashMessage(i18n.t('gacha.adChance_won', '🎉 가챠권 +1!'));
+      } else {
+        this.flashMessage(i18n.t('gacha.adChance_failed', '광고 재생 실패'));
+      }
     } else {
       this.flashMessage(i18n.t('gacha.adChance_lost', '아쉬워요! 다음 기회에…'));
     }

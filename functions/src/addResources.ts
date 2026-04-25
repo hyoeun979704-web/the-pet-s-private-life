@@ -70,6 +70,7 @@ export const addResources = onCall<Payload>(async (req) => {
       snackEarned?: number;
       starDustEarned?: number;
       quizSessionsUsed?: number;
+      adsUsed?: Record<string, number>;
     } | undefined) ?? {};
 
     // Reset daily counters if we're past midnight.
@@ -79,6 +80,7 @@ export const addResources = onCall<Payload>(async (req) => {
     let snackEarned = pastMidnight ? 0 : (daily.snackEarned ?? 0);
     let starDustEarned = pastMidnight ? 0 : (daily.starDustEarned ?? 0);
     let quizSessionsUsed = pastMidnight ? 0 : (daily.quizSessionsUsed ?? 0);
+    const adsUsed = pastMidnight ? {} : (daily.adsUsed ?? {});
 
     const dSnack = normalized.snack ?? 0;
     const dStar = normalized.starDust ?? 0;
@@ -128,6 +130,7 @@ export const addResources = onCall<Payload>(async (req) => {
       'dailyLimits.snackEarned': snackEarned,
       'dailyLimits.starDustEarned': starDustEarned,
       'dailyLimits.quizSessionsUsed': quizSessionsUsed,
+      'dailyLimits.adsUsed': adsUsed,
     });
     return { ok: true, source, granted: normalized };
   });
