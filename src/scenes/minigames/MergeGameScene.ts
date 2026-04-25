@@ -265,7 +265,7 @@ export class MergeGameScene extends Phaser.Scene {
       // that exceed are truncated by design — encourages returning rather
       // than grinding a single session.
       const capped = Math.min(this.sessionStarDust, MAX_GRANT_PER_CALL);
-      await services.economy.grant('merge_game', { starDust: capped });
+      await services.economy.grantWithExp('merge_game', { starDust: capped });
     }
     // _reason will be passed to analytics in PART 11.
     this.scene.start('MainScene');

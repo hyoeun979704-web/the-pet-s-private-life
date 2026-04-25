@@ -273,7 +273,10 @@ export class QuizScene extends Phaser.Scene {
       }
       // Calling grant even with empty deltas bumps dailyLimits.quizSessionsUsed
       // server-side — closes the 'fail-3-times to peek answers' exploit.
-      await services.economy.grant('quiz', deltas);
+      // expMultiplier scales the per-correct exp from EXP_BY_SOURCE.quiz.
+      await services.economy.grantWithExp('quiz', deltas, {
+        expMultiplier: r.correct,
+      });
     }
     this.scene.start('MainScene');
   }

@@ -113,7 +113,9 @@ export const MAX_RESOURCE_GAIN_PER_SOURCE = {
   merge_game: { starDust: 50 },
   quiz: { magicShard: 10, gachaTicket: 1 },
   daily_mission: { snack: 30, starDust: 10 },
-  level_up: { magicStone: 3, gachaTicket: 1 },
+  // level_up caps cover the maxima in data/levels.json so the cascade
+  // grants in EconomySystem.grantWithExp don't silently get rejected.
+  level_up: { snack: 500, starDust: 50, magicStone: 3, gachaTicket: 1 },
   login_bonus: { snack: 20, starDust: 5, magicStone: 1 },
   ad_reward: { snack: 10, starDust: 5 },
 } as const;
@@ -126,6 +128,21 @@ export const BLOCK_PUZZLE_REWARD = {
   perLine: 5,
   comboBonus: 15,
 } as const;
+
+/**
+ * Default exp granted per source. Minigames can override (e.g. quiz scales
+ * with correct count). Exp is currently client-tracked; a future PART will
+ * promote it to a server-validated field if exploitation becomes a concern.
+ */
+export const EXP_BY_SOURCE: Record<string, number> = {
+  block_puzzle: 30,
+  merge_game: 40,
+  quiz: 5, // per correct answer; multiply at the call site
+  daily_mission: 50,
+  level_up: 0,
+  login_bonus: 10,
+  ad_reward: 0,
+};
 
 export type ResourceGainSource = keyof typeof MAX_RESOURCE_GAIN_PER_SOURCE;
 

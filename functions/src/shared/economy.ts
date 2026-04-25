@@ -23,7 +23,9 @@ export const MAX_RESOURCE_GAIN_PER_SOURCE: Record<
   merge_game: { starDust: 50 },
   quiz: { magicShard: 10, gachaTicket: 1 },
   daily_mission: { snack: 30, starDust: 10 },
-  level_up: { magicStone: 3, gachaTicket: 1 },
+  // level_up caps cover data/levels.json maxima so the EconomySystem
+  // cascade isn't rejected server-side.
+  level_up: { snack: 500, starDust: 50, magicStone: 3, gachaTicket: 1 },
   login_bonus: { snack: 20, starDust: 5, magicStone: 1 },
   ad_reward: { snack: 10, starDust: 5 },
 };

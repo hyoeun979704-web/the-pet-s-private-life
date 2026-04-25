@@ -26,6 +26,7 @@ export function initDevServices(grantFn: GrantFn, now: () => number = () => Date
   const economy = new EconomySystem({
     grantFn,
     getSave: () => gameState.get(),
+    gameState,
   });
   services = { saveSystem, gameState, economy };
   return services;

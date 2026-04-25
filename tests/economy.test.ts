@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialSaveData, type SaveData } from '@/entities/SaveData';
 import { EconomySystem, type GrantFn } from '@/systems/EconomySystem';
+import { GameState } from '@/systems/GameState';
+import { MemorySaveBackend, SaveSystem } from '@/systems/SaveSystem';
 
 function makeSave(overrides: Partial<SaveData> = {}): SaveData {
   return { ...createInitialSaveData('p1', 0), ...overrides };
@@ -8,6 +10,22 @@ function makeSave(overrides: Partial<SaveData> = {}): SaveData {
 
 function grantOk(): GrantFn {
   return async (_source, deltas) => ({ ok: true, granted: deltas });
+}
+
+function makeStatefulEconomy(): { economy: EconomySystem; gameState: GameState; calls: { source: string; deltas: unknown }[] } {
+  const calls: { source: string; deltas: unknown }[] = [];
+  const grantFn: GrantFn = async (source, deltas) => {
+    calls.push({ source, deltas });
+    return { ok: true, granted: deltas };
+  };
+  const sys = new SaveSystem({ backend: new MemorySaveBackend(), now: () => 0, saveRetries: 1 });
+  const gameState = new GameState(createInitialSaveData('p1', 0), sys);
+  const economy = new EconomySystem({
+    grantFn,
+    getSave: () => gameState.get(),
+    gameState,
+  });
+  return { economy, gameState, calls };
 }
 
 describe('EconomySystem', () => {
@@ -113,5 +131,52 @@ describe('EconomySystem', () => {
     const res = sys.canGrant('quiz', { magicShard: 1 });
     expect(res.ok).toBe(false);
     expect(res.reason).toBe('daily-limit');
+  });
+
+  it('applyExp updates exp + level when crossing thresholds', async () => {
+    const { economy, gameState } = makeStatefulEconomy();
+    expect(gameState.get().level).toBe(1);
+    const ups = await economy.applyExp(120); // crosses lvl 2 threshold (100)
+    expect(ups).toHaveLength(1);
+    expect(ups[0]?.to).toBe(2);
+    expect(gameState.get().exp).toBe(120);
+    expect(gameState.get().level).toBe(2);
+  });
+
+  it('applyExp returns multiple events on a big jump and lands at the highest level', async () => {
+    const { economy, gameState } = makeStatefulEconomy();
+    const ups = await economy.applyExp(300); // crosses 100 + 250 -> lvl 3
+    expect(ups.map((u) => u.to)).toEqual([2, 3]);
+    expect(gameState.get().level).toBe(3);
+  });
+
+  it('grantWithExp cascades level-up grants through the same grantFn', async () => {
+    const { economy, calls } = makeStatefulEconomy();
+    // block_puzzle exp = 30; need much more to level up. Use expOverride.
+    const result = await economy.grantWithExp(
+      'block_puzzle',
+      { snack: 5 },
+      { expOverride: 300 },
+    );
+    expect(result.grant.ok).toBe(true);
+    expect(result.expGained).toBe(300);
+    expect(result.levelUps.map((u) => u.to)).toEqual([2, 3]);
+    // 1 main grant + 2 level_up grants
+    expect(calls).toHaveLength(3);
+    expect(calls[0]?.source).toBe('block_puzzle');
+    expect(calls[1]?.source).toBe('level_up');
+    expect(calls[2]?.source).toBe('level_up');
+  });
+
+  it('grantWithExp expMultiplier scales the per-source exp', async () => {
+    const { economy } = makeStatefulEconomy();
+    // EXP_BY_SOURCE.quiz = 5; multiplier 4 -> 20 exp (still below lvl 2)
+    const result = await economy.grantWithExp(
+      'quiz',
+      { magicShard: 4 },
+      { expMultiplier: 4 },
+    );
+    expect(result.expGained).toBe(20);
+    expect(result.levelUps).toEqual([]);
   });
 });

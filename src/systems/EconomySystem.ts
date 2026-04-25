@@ -1,10 +1,13 @@
 import {
   DAILY_LIMITS,
+  EXP_BY_SOURCE,
   MAX_RESOURCE_GAIN_PER_SOURCE,
   type ResourceGainSource,
   type ResourceKey,
 } from '@/config/Constants';
 import type { Resources, SaveData } from '@/entities/SaveData';
+import { detectLevelUps, type LevelUp } from '@/systems/LevelSystem';
+import type { GameState } from '@/systems/GameState';
 
 export type ResourceDelta = Partial<Record<ResourceKey, number>>;
 
@@ -33,6 +36,20 @@ export interface EconomySystemOptions {
    * to avoid stale reads after a server mutation.
    */
   getSave: () => SaveData;
+  /**
+   * Optional: when provided, applyExp / grantWithExp will mutate the save's
+   * exp + level via this game state. Without it, applyExp is a no-op (used
+   * by unit tests that focus on grant validation).
+   */
+  gameState?: GameState;
+}
+
+export interface GrantWithExpResult {
+  grant: GrantResult;
+  expGained: number;
+  levelUps: LevelUp[];
+  /** Per-level grants triggered by the level-up cascade. */
+  levelUpGrants: GrantResult[];
 }
 
 export class EconomySystem {
@@ -40,9 +57,12 @@ export class EconomySystem {
 
   private readonly getSave: () => SaveData;
 
+  private readonly gameState: GameState | null;
+
   constructor(options: EconomySystemOptions) {
     this.grantFn = options.grantFn;
     this.getSave = options.getSave;
+    this.gameState = options.gameState ?? null;
   }
 
   wallet(): Resources {
@@ -105,5 +125,55 @@ export class EconomySystem {
       snack: Math.max(0, DAILY_LIMITS.snack - d.snackEarned),
       starDust: Math.max(0, DAILY_LIMITS.starDust - d.starDustEarned),
     };
+  }
+
+  /**
+   * Mutates the save's exp + level via gameState, returns the level-ups
+   * crossed (one per threshold). NOTE: rewards are NOT auto-granted here —
+   * call grantWithExp() if you want the cascade.
+   */
+  async applyExp(amount: number): Promise<LevelUp[]> {
+    if (!this.gameState || amount <= 0) return [];
+    const prev = this.getSave();
+    const newExp = prev.exp + amount;
+    const ups = detectLevelUps(prev.level, newExp);
+    const newLevel = ups.length > 0 ? (ups[ups.length - 1] as LevelUp).to : prev.level;
+    await this.gameState.patch((d) => ({ ...d, exp: newExp, level: newLevel }));
+    return ups;
+  }
+
+  /**
+   * Convenience: server-grant resources, add exp for the source, and grant
+   * each level-up reward through the same server path. Best-effort — a
+   * cap-rejected level-up grant is logged in the result but doesn't roll
+   * back the original grant.
+   */
+  async grantWithExp(
+    source: ResourceGainSource,
+    deltas: ResourceDelta,
+    options: { expOverride?: number; expMultiplier?: number } = {},
+  ): Promise<GrantWithExpResult> {
+    const main = await this.grant(source, deltas);
+    if (!main.ok) {
+      return { grant: main, expGained: 0, levelUps: [], levelUpGrants: [] };
+    }
+
+    let expBase = options.expOverride ?? EXP_BY_SOURCE[source] ?? 0;
+    if (options.expMultiplier !== undefined) expBase *= options.expMultiplier;
+    const expGained = Math.max(0, Math.floor(expBase));
+    const levelUps = await this.applyExp(expGained);
+
+    const levelUpGrants: GrantResult[] = [];
+    // Sequential await is intentional: the server caps per-call rewards and
+    // we want each level-up to be a discrete, auditable event.
+    await levelUps.reduce(
+      async (prev, lu) => {
+        await prev;
+        const res = await this.grant('level_up', lu.reward);
+        levelUpGrants.push(res);
+      },
+      Promise.resolve(),
+    );
+    return { grant: main, expGained, levelUps, levelUpGrants };
   }
 }

@@ -307,8 +307,9 @@ export class BlockPuzzleScene extends Phaser.Scene {
       // surface the remainder to the player as session feedback (the cap
       // intentionally creates scarcity that pushes engagement to other
       // minigames + ads).
+      // Exp + level-up cascade is handled via grantWithExp.
       const capped = Math.min(this.sessionSnack, MAX_GRANT_PER_CALL);
-      await services.economy.grant('block_puzzle', { snack: capped });
+      await services.economy.grantWithExp('block_puzzle', { snack: capped });
     }
     this.scene.start('MainScene');
   }
