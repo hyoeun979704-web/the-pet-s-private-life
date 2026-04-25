@@ -19,6 +19,11 @@ export const ENV = {
     appIdAndroid: readString('VITE_ADMOB_APP_ID_ANDROID'),
     adUnitRewarded: readString('VITE_ADMOB_AD_UNIT_REWARDED'),
   },
+  legal: {
+    privacyPolicyUrl: readString('VITE_PRIVACY_POLICY_URL'),
+    tosUrl: readString('VITE_TOS_URL'),
+    supportEmail: readString('VITE_SUPPORT_EMAIL'),
+  },
 } as const;
 
 export function firebaseConfigured(): boolean {
