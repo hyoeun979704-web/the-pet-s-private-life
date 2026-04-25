@@ -1,0 +1,16 @@
+{
+  "comment": "Per ROADMAP §시즌 운영. Activate via timestamp range; UI renders the current season's themeColors and limited content. Real seasons are added by editing this file (no app update required if hosted remotely; for MVP it ships with the build).",
+  "seasons": [
+    {
+      "id": "season_2026_spring",
+      "nameKo": "벚꽃 시즌",
+      "startAt": "2026-03-20T00:00:00+09:00",
+      "endAt":   "2026-04-20T23:59:59+09:00",
+      "themeColors": { "primary": "#FFC8DD", "secondary": "#FAEDCB" },
+      "limitedCharacters": [],
+      "limitedFurniture": [],
+      "limitedQuizTrack": "spring_animals",
+      "rewards": { "login7days": { "magicStone": 3 } }
+    }
+  ]
+}
