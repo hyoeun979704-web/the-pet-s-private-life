@@ -253,12 +253,17 @@ export class QuizScene extends Phaser.Scene {
     });
   }
 
-  private async finishSession(_reason: 'user' | 'complete' | 'wrong-limit'): Promise<void> {
+  private async finishSession(reason: 'user' | 'complete' | 'wrong-limit'): Promise<void> {
     if (this.ending) return;
     this.ending = true;
     const r = this.system.results();
     const services = getServices();
-    if (services && (r.correct > 0 || r.perfect)) {
+
+    // Only completed sessions burn the daily attempt + may grant rewards.
+    // Manual quit ('user') leaves the daily counter untouched so an
+    // accidental tap on End isn't punished.
+    const sessionCounted = reason === 'complete' || reason === 'wrong-limit';
+    if (services && sessionCounted) {
       const deltas: { magicShard?: number; gachaTicket?: number } = {};
       if (r.correct > 0) {
         deltas.magicShard = Math.min(r.correct, MAX_SHARD_PER_CALL);
@@ -266,6 +271,8 @@ export class QuizScene extends Phaser.Scene {
       if (r.perfect) {
         deltas.gachaTicket = Math.min(1, MAX_TICKET_PER_CALL);
       }
+      // Calling grant even with empty deltas bumps dailyLimits.quizSessionsUsed
+      // server-side — closes the 'fail-3-times to peek answers' exploit.
       await services.economy.grant('quiz', deltas);
     }
     this.scene.start('MainScene');
