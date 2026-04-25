@@ -15,15 +15,17 @@ function mergeGrantLocal(
 ): SaveData {
   const resources = { ...save.resources };
   let { snackEarned, starDustEarned, quizSessionsUsed } = save.dailyLimits;
+  // Milestone sources (level_up, login_bonus) don't count against daily
+  // snack/starDust limits. Mirrors server addResources behavior.
+  const milestone = source === 'level_up' || source === 'login_bonus';
   (Object.keys(deltas) as Array<keyof typeof deltas>).forEach((key) => {
     const add = deltas[key] ?? 0;
     resources[key] = (resources[key] ?? 0) + add;
-    if (key === 'snack') snackEarned += add;
-    if (key === 'starDust') starDustEarned += add;
+    if (!milestone) {
+      if (key === 'snack') snackEarned += add;
+      if (key === 'starDust') starDustEarned += add;
+    }
   });
-  // Mirror server addResources behavior: a 'quiz' grant burns the daily
-  // session counter regardless of payload (closes the fail-to-peek loop
-  // for dev/local play).
   if (source === 'quiz') quizSessionsUsed += 1;
   return {
     ...save,

@@ -90,10 +90,15 @@ export class EconomySystem {
     if (overCap) return { ok: false, reason: 'cap-exceeded' };
 
     const save = this.getSave();
-    const todaySnack = save.dailyLimits.snackEarned + (deltas.snack ?? 0);
-    const todayStar = save.dailyLimits.starDustEarned + (deltas.starDust ?? 0);
-    if (todaySnack > DAILY_LIMITS.snack || todayStar > DAILY_LIMITS.starDust) {
-      return { ok: false, reason: 'daily-limit' };
+    // Milestone rewards (level_up, login_bonus) bypass daily caps —
+    // mirrors the server addResources exemption.
+    const exemptFromDaily = source === 'level_up' || source === 'login_bonus';
+    if (!exemptFromDaily) {
+      const todaySnack = save.dailyLimits.snackEarned + (deltas.snack ?? 0);
+      const todayStar = save.dailyLimits.starDustEarned + (deltas.starDust ?? 0);
+      if (todaySnack > DAILY_LIMITS.snack || todayStar > DAILY_LIMITS.starDust) {
+        return { ok: false, reason: 'daily-limit' };
+      }
     }
     if (source === 'quiz' && save.dailyLimits.quizSessionsUsed >= DAILY_LIMITS.quizSessions) {
       return { ok: false, reason: 'daily-limit' };

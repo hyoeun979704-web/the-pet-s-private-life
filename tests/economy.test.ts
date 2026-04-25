@@ -179,4 +179,27 @@ describe('EconomySystem', () => {
     expect(result.expGained).toBe(20);
     expect(result.levelUps).toEqual([]);
   });
+
+  it('level_up bypasses daily snack cap (milestone reward)', () => {
+    const save = makeSave({
+      dailyLimits: {
+        resetAtMs: 0, snackEarned: 200, starDustEarned: 0,
+        quizSessionsUsed: 0, adFatigueUsed: 0,
+      },
+    });
+    const sys = new EconomySystem({ grantFn: grantOk(), getSave: () => save });
+    expect(sys.canGrant('block_puzzle', { snack: 5 }).ok).toBe(false);
+    expect(sys.canGrant('level_up', { snack: 100 }).ok).toBe(true);
+  });
+
+  it('login_bonus bypasses daily caps too', () => {
+    const save = makeSave({
+      dailyLimits: {
+        resetAtMs: 0, snackEarned: 200, starDustEarned: 50,
+        quizSessionsUsed: 0, adFatigueUsed: 0,
+      },
+    });
+    const sys = new EconomySystem({ grantFn: grantOk(), getSave: () => save });
+    expect(sys.canGrant('login_bonus', { snack: 20, starDust: 5 }).ok).toBe(true);
+  });
 });

@@ -82,17 +82,22 @@ export const addResources = onCall<Payload>(async (req) => {
 
     const dSnack = normalized.snack ?? 0;
     const dStar = normalized.starDust ?? 0;
-    if (snackEarned + dSnack > DAILY_LIMITS.snack) {
-      throw new HttpsError(
-        'resource-exhausted',
-        `daily snack cap reached (${DAILY_LIMITS.snack})`,
-      );
-    }
-    if (starDustEarned + dStar > DAILY_LIMITS.starDust) {
-      throw new HttpsError(
-        'resource-exhausted',
-        `daily starDust cap reached (${DAILY_LIMITS.starDust})`,
-      );
+    // Milestone rewards (level_up) bypass daily caps — they're event-based,
+    // not grindable. Same exemption applies to login_bonus.
+    const exemptFromDaily = source === 'level_up' || source === 'login_bonus';
+    if (!exemptFromDaily) {
+      if (snackEarned + dSnack > DAILY_LIMITS.snack) {
+        throw new HttpsError(
+          'resource-exhausted',
+          `daily snack cap reached (${DAILY_LIMITS.snack})`,
+        );
+      }
+      if (starDustEarned + dStar > DAILY_LIMITS.starDust) {
+        throw new HttpsError(
+          'resource-exhausted',
+          `daily starDust cap reached (${DAILY_LIMITS.starDust})`,
+        );
+      }
     }
     if (source === 'quiz') {
       // One quiz grant call per source 'quiz' = one completed session.
