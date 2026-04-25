@@ -44,6 +44,13 @@ export interface OwnedFurniture {
   count: number;
 }
 
+export interface TutorialState {
+  /** Index into TUTORIAL_STEPS. -1 once complete. */
+  currentIndex: number;
+  /** When the tutorial began, for total_sec analytics on completion. */
+  startedAtMs: number;
+}
+
 export interface SaveData {
   schemaVersion: number;
   playerId: string;
@@ -57,6 +64,7 @@ export interface SaveData {
   dailyLimits: DailyLimitTracker;
   gachaPity: number;
   lastLoginMs: number;
+  tutorial?: TutorialState;
   settings: GameSettings;
   locale: SupportedLocale;
 }

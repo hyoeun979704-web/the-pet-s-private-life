@@ -66,6 +66,7 @@ export class MergeGameScene extends Phaser.Scene {
     this.input.mouse?.disableContextMenu();
 
     this.system = new MergeGameSystem({ width: BOARD_W, height: BOARD_H, initialFills: 6 });
+    getServices()?.analytics.emit('minigame_start', { type: 'merge_game' });
     this.boardOriginX = (this.scale.width - BOARD_W * CELL_PX) / 2;
     this.boardOriginY = 120;
 
@@ -326,6 +327,11 @@ export class MergeGameScene extends Phaser.Scene {
       return;
     }
     const capped = Math.min(this.sessionStarDust * multiplier, MAX_GRANT_PER_CALL);
+    services.analytics.emit('minigame_end', {
+      type: 'merge_game',
+      score: capped,
+      adBoost: multiplier === 2,
+    });
     await services.economy.grantWithExp('merge_game', { starDust: capped });
     this.scene.start('MainScene');
   }

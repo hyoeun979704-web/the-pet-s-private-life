@@ -60,6 +60,7 @@ export class QuizScene extends Phaser.Scene {
     const pool = quizData.questions as unknown as QuizQuestion[];
     this.system = new QuizSystem(pool, { sessionSize: 10, wrongLimit: 3 });
     this.system.start();
+    getServices()?.analytics.emit('minigame_start', { type: 'quiz' });
 
     this.buildHud();
     this.buildCard();

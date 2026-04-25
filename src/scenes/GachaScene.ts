@@ -142,8 +142,16 @@ export class GachaScene extends Phaser.Scene {
     this.refreshHud();
     const result = await this.gacha.roll();
     this.rolling = false;
-    if (result.ok) this.showResult(result);
-    else this.flashMessage(this.reasonText(result.reason));
+    if (result.ok) {
+      this.showResult(result);
+      getServices()?.analytics.emit('gacha_roll', {
+        grade: result.grade ?? 'normal',
+        is_new: result.isNew ?? false,
+        pity: result.pity ?? 0,
+      });
+    } else {
+      this.flashMessage(this.reasonText(result.reason));
+    }
     this.refreshHud();
   }
 

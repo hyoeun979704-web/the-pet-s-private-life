@@ -1,14 +1,28 @@
 import { createInitialSaveData } from '@/entities/SaveData';
 import { AdSystem, MockAdAdapter } from '@/systems/AdSystem';
+import {
+  AnalyticsSystem,
+  ConsoleAnalyticsTransport,
+  type AnalyticsTransport,
+} from '@/systems/AnalyticsSystem';
 import { EconomySystem, type GrantFn } from '@/systems/EconomySystem';
 import { GameState } from '@/systems/GameState';
 import { MemorySaveBackend, SaveSystem } from '@/systems/SaveSystem';
+import { TutorialSystem } from '@/systems/TutorialSystem';
 
 export interface GameServices {
   saveSystem: SaveSystem;
   gameState: GameState;
   economy: EconomySystem;
   ads: AdSystem;
+  analytics: AnalyticsSystem;
+  tutorial: TutorialSystem;
+}
+
+export interface InitOptions {
+  grantFn: GrantFn;
+  now?: () => number;
+  analyticsTransport?: AnalyticsTransport;
 }
 
 let services: GameServices | null = null;
@@ -30,10 +44,16 @@ export function initDevServices(grantFn: GrantFn, now: () => number = () => Date
     getSave: () => gameState.get(),
     gameState,
   });
+  const analytics = new AnalyticsSystem({
+    transport: new ConsoleAnalyticsTransport(),
+    crashFromLogger: true,
+    now,
+  });
   // Dev mode uses MockAdAdapter (always succeeds). PART 13 swaps in the
   // Capacitor AdMob plugin adapter.
-  const ads = new AdSystem({ adapter: new MockAdAdapter(), gameState, now });
-  services = { saveSystem, gameState, economy, ads };
+  const ads = new AdSystem({ adapter: new MockAdAdapter(), gameState, now, analytics });
+  const tutorial = new TutorialSystem({ gameState, analytics, now });
+  services = { saveSystem, gameState, economy, ads, analytics, tutorial };
   return services;
 }
 

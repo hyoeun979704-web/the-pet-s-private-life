@@ -1,5 +1,6 @@
 import adPlacementsData from '@/data/adPlacements.json';
 import type { AdPlacementDef, AdPlacementId } from '@/entities/AdPlacement';
+import type { AnalyticsSystem } from '@/systems/AnalyticsSystem';
 import type { GameState } from '@/systems/GameState';
 import { logger } from '@/utils/Logger';
 
@@ -33,6 +34,8 @@ export interface AdSystemOptions {
   failureThreshold?: number;
   /** Injected clock for deterministic tests. Defaults to Date.now. */
   now?: () => number;
+  /** Optional analytics sink for ad_request/impression/reward events. */
+  analytics?: AnalyticsSystem;
 }
 
 const PLACEMENTS: AdPlacementDef[] =
@@ -56,6 +59,8 @@ export class AdSystem {
 
   private readonly now: () => number;
 
+  private readonly analytics: AnalyticsSystem | null;
+
   /** Consecutive failure count per placement (resets on successful watch). */
   private readonly fails: Map<AdPlacementId, number> = new Map();
 
@@ -67,6 +72,7 @@ export class AdSystem {
     this.gameState = opts.gameState;
     this.failureThreshold = opts.failureThreshold ?? 3;
     this.now = opts.now ?? (() => Date.now());
+    this.analytics = opts.analytics ?? null;
   }
 
   static getPlacement(id: AdPlacementId): AdPlacementDef | null {
@@ -118,6 +124,7 @@ export class AdSystem {
       return { ok: false, reason: 'daily-cap' };
     }
 
+    this.analytics?.emit('ad_request', { placement });
     let watched = false;
     try {
       watched = await this.adapter.showRewarded(placement);
@@ -134,6 +141,8 @@ export class AdSystem {
 
     this.fails.set(placement, 0);
     await this.bumpUsed(placement);
+    this.analytics?.emit('ad_impression', { placement });
+    this.analytics?.emit('ad_reward', { placement });
     logger.info('ad.reward', { placement });
     return { ok: true };
   }

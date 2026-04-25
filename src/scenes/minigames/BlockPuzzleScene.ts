@@ -73,6 +73,8 @@ export class BlockPuzzleScene extends Phaser.Scene {
       shapeCatalog: catalog,
     });
 
+    getServices()?.analytics.emit('minigame_start', { type: 'block_puzzle' });
+
     this.boardOriginX = (this.scale.width - BOARD_PX) / 2;
     this.boardOriginY = 80;
     this.boardGfx = this.add.graphics();
@@ -301,13 +303,12 @@ export class BlockPuzzleScene extends Phaser.Scene {
     this.endingSession = true;
     this.gameOver = reason === 'game-over';
     const services = getServices();
+    services?.analytics.emit('minigame_end', {
+      type: 'block_puzzle',
+      reason,
+      score: this.sessionSnack,
+    });
     if (services && this.sessionSnack > 0) {
-      // Server enforces MAX_RESOURCE_GAIN_PER_SOURCE.block_puzzle.snack (50)
-      // per call. A 3-min session can earn more than that; we cap once and
-      // surface the remainder to the player as session feedback (the cap
-      // intentionally creates scarcity that pushes engagement to other
-      // minigames + ads).
-      // Exp + level-up cascade is handled via grantWithExp.
       const capped = Math.min(this.sessionSnack, MAX_GRANT_PER_CALL);
       await services.economy.grantWithExp('block_puzzle', { snack: capped });
     }
