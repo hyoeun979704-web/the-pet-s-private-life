@@ -35,6 +35,7 @@ export function buildInitialSave(uid: string, nowMs: number): Record<string, unk
       starDustEarned: 0,
       quizSessionsUsed: 0,
       adFatigueUsed: 0,
+      adsUsed: {},
     },
     gachaPity: 0,
     lastLoginMs: nowMs,

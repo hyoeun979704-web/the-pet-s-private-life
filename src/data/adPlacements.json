@@ -1,0 +1,10 @@
+{
+  "comment": "ROADMAP §광고 시스템 § 보상형 광고 5종. dailyCap is per-placement; total/day = 10.",
+  "placements": [
+    { "id": "fatigue_restore",     "dailyCap": 3, "activatedFrom": "alpha", "rewardLabel": "피로도 +3" },
+    { "id": "quiz_extra_session",  "dailyCap": 1, "activatedFrom": "alpha", "rewardLabel": "퀴즈 1세션 추가" },
+    { "id": "merge_boost",         "dailyCap": 2, "activatedFrom": "beta",  "rewardLabel": "머지 보상 2배" },
+    { "id": "block_continue",      "dailyCap": 3, "activatedFrom": "beta",  "rewardLabel": "블록 1회 이어하기" },
+    { "id": "gacha_ticket_chance", "dailyCap": 1, "activatedFrom": "beta",  "rewardLabel": "50% 확률로 가챠권 +1" }
+  ]
+}

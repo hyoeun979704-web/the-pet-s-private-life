@@ -70,7 +70,7 @@ describe('EconomySystem', () => {
     const save = makeSave({
       dailyLimits: {
         resetAtMs: 0, snackEarned: 195, starDustEarned: 0,
-        quizSessionsUsed: 0, adFatigueUsed: 0,
+        quizSessionsUsed: 0, adFatigueUsed: 0, adsUsed: {},
       },
     });
     const sys = new EconomySystem({ grantFn: grantOk(), getSave: () => save });
@@ -107,7 +107,7 @@ describe('EconomySystem', () => {
     const save = makeSave({
       dailyLimits: {
         resetAtMs: 0, snackEarned: 180, starDustEarned: 45,
-        quizSessionsUsed: 0, adFatigueUsed: 0,
+        quizSessionsUsed: 0, adFatigueUsed: 0, adsUsed: {},
       },
     });
     const sys = new EconomySystem({ grantFn: grantOk(), getSave: () => save });
@@ -123,7 +123,7 @@ describe('EconomySystem', () => {
     const save = makeSave({
       dailyLimits: {
         resetAtMs: 0, snackEarned: 0, starDustEarned: 0,
-        quizSessionsUsed: 1, adFatigueUsed: 0,
+        quizSessionsUsed: 1, adFatigueUsed: 0, adsUsed: {},
       },
     });
     const sys = new EconomySystem({ grantFn: grantOk(), getSave: () => save });
@@ -184,7 +184,7 @@ describe('EconomySystem', () => {
     const save = makeSave({
       dailyLimits: {
         resetAtMs: 0, snackEarned: 200, starDustEarned: 0,
-        quizSessionsUsed: 0, adFatigueUsed: 0,
+        quizSessionsUsed: 0, adFatigueUsed: 0, adsUsed: {},
       },
     });
     const sys = new EconomySystem({ grantFn: grantOk(), getSave: () => save });
@@ -196,7 +196,7 @@ describe('EconomySystem', () => {
     const save = makeSave({
       dailyLimits: {
         resetAtMs: 0, snackEarned: 200, starDustEarned: 50,
-        quizSessionsUsed: 0, adFatigueUsed: 0,
+        quizSessionsUsed: 0, adFatigueUsed: 0, adsUsed: {},
       },
     });
     const sys = new EconomySystem({ grantFn: grantOk(), getSave: () => save });

@@ -21,7 +21,13 @@ export interface DailyLimitTracker {
   snackEarned: number;
   starDustEarned: number;
   quizSessionsUsed: number;
+  /**
+   * @deprecated Use `adsUsed.fatigue_restore` instead. Kept for backward
+   * compatibility with v1 saves that predate the per-placement counter.
+   */
   adFatigueUsed: number;
+  /** Per-placement ad counters; resets at midnight along with siblings. */
+  adsUsed: Record<string, number>;
 }
 
 export interface GameSettings {
@@ -76,6 +82,7 @@ export function createInitialSaveData(playerId: string, nowMs: number = Date.now
       starDustEarned: 0,
       quizSessionsUsed: 0,
       adFatigueUsed: 0,
+      adsUsed: {},
     },
     gachaPity: 0,
     lastLoginMs: nowMs,
