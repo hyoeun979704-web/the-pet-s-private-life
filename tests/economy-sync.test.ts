@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   FATIGUE_CONFIG,
+  GACHA_CONFIG,
   MAX_RESOURCE_GAIN_PER_SOURCE,
   PLACEMENT_CONFIG,
   RESOURCE_KEYS,
@@ -12,6 +13,7 @@ import {
 import {
   ACTIVITY_COSTS as FN_ACTIVITY_COSTS,
   DAILY_LIMITS as FN_DAILY_LIMITS,
+  GACHA as FN_GACHA,
   INVENTORY_STORAGE_SLOTS as FN_STORAGE_SLOTS,
   MAX_RESOURCE_GAIN_PER_SOURCE as FN_CAPS,
   RESOURCE_KEYS as FN_RESOURCE_KEYS,
@@ -38,5 +40,14 @@ describe('economy-sync: client Constants vs functions/shared', () => {
 
   it('inventory storage slots match between client and server', () => {
     expect(FN_STORAGE_SLOTS).toBe(PLACEMENT_CONFIG.storageSlots);
+  });
+
+  it('GACHA cost / pity / rates match between client and server', () => {
+    // Different field name on each side (GACHA_CONFIG vs GACHA) but the
+    // shape is identical and MUST stay in sync — server roll uses these
+    // to produce results that the client UI claims to disclose.
+    expect(FN_GACHA.costMagicStone).toBe(GACHA_CONFIG.costMagicStone);
+    expect(FN_GACHA.pityLimit).toBe(GACHA_CONFIG.pityLimit);
+    expect(FN_GACHA.rates).toEqual(GACHA_CONFIG.rates);
   });
 });
