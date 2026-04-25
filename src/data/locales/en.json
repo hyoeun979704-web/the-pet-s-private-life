@@ -45,7 +45,9 @@
   },
   "quiz": {
     "end": "End",
-    "daily_cap": "You've already taken today's quiz. See you tomorrow!"
+    "daily_cap": "You've already taken today's quiz. See you tomorrow!",
+    "watch_ad_extra": "📺 Watch ad for one more",
+    "ad_failed": "Ad failed to load — retry"
   },
   "placement": {
     "selected": "Selected",

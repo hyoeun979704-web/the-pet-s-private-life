@@ -260,14 +260,73 @@ export class MergeGameScene extends Phaser.Scene {
     if (this.endingSession) return;
     this.endingSession = true;
     const services = getServices();
-    if (services && this.sessionStarDust > 0) {
-      // Server caps per-call at MAX_GRANT_PER_CALL (50). Session totals
-      // that exceed are truncated by design — encourages returning rather
-      // than grinding a single session.
-      const capped = Math.min(this.sessionStarDust, MAX_GRANT_PER_CALL);
-      await services.economy.grantWithExp('merge_game', { starDust: capped });
+    if (!services || this.sessionStarDust <= 0) {
+      this.scene.start('MainScene');
+      return;
     }
-    // _reason will be passed to analytics in PART 11.
+    // Offer the merge_boost ad option when available; otherwise grant
+    // immediately. Cap is enforced after the optional 2x multiplier.
+    if (services.ads.canWatch('merge_boost')) {
+      this.showBoostPrompt();
+      return;
+    }
+    await this.grantAndExit(1);
+  }
+
+  private showBoostPrompt(): void {
+    const { width, height } = this.scale;
+    const cx = width / 2;
+    const cy = height / 2 + 40;
+
+    const bg = this.add.rectangle(cx, cy, 520, 220, parseHex(DESIGN_TOKENS.color.bgAlt));
+    bg.setStrokeStyle(2, parseHex(DESIGN_TOKENS.color.textSecondary));
+
+    this.add
+      .text(cx, cy - 60, `세션 보상: ⭐ ${Math.min(this.sessionStarDust, 50)}`, {
+        fontFamily: DESIGN_TOKENS.font.family,
+        fontSize: `${DESIGN_TOKENS.font.sizeLg}px`,
+        color: DESIGN_TOKENS.color.textPrimary,
+      })
+      .setOrigin(0.5);
+
+    const adBtn = this.add
+      .text(cx - 110, cy + 30, `[ 📺 ${i18n.t('merge.watch_ad_2x', '광고 보고 2배 받기')} ]`, {
+        fontFamily: DESIGN_TOKENS.font.family,
+        fontSize: `${DESIGN_TOKENS.font.sizeMd}px`,
+        color: DESIGN_TOKENS.color.primaryDark,
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    adBtn.on('pointerup', () => this.tryBoost(adBtn));
+
+    const skipBtn = this.add
+      .text(cx + 110, cy + 30, `[ ${i18n.t('merge.skip_ad', '바로 받기')} ]`, {
+        fontFamily: DESIGN_TOKENS.font.family,
+        fontSize: `${DESIGN_TOKENS.font.sizeMd}px`,
+        color: DESIGN_TOKENS.color.textSecondary,
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    skipBtn.on('pointerup', () => this.grantAndExit(1));
+  }
+
+  private async tryBoost(btn: Phaser.GameObjects.Text): Promise<void> {
+    const services = getServices();
+    if (!services) return;
+    btn.disableInteractive();
+    btn.setColor(DESIGN_TOKENS.color.textSecondary);
+    const res = await services.ads.watch('merge_boost');
+    await this.grantAndExit(res.ok ? 2 : 1);
+  }
+
+  private async grantAndExit(multiplier: number): Promise<void> {
+    const services = getServices();
+    if (!services) {
+      this.scene.start('MainScene');
+      return;
+    }
+    const capped = Math.min(this.sessionStarDust * multiplier, MAX_GRANT_PER_CALL);
+    await services.economy.grantWithExp('merge_game', { starDust: capped });
     this.scene.start('MainScene');
   }
 }

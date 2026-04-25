@@ -100,6 +100,16 @@ export class GachaScene extends Phaser.Scene {
       this.scene.start('GachaRatesScene', { returnTo: 'GachaScene' }),
     );
 
+    const adChanceBtn = this.add
+      .text(width / 2, 340, `[ 📺 ${i18n.t('gacha.adChance', '광고 보고 50% 확률 가챠권')} ]`, {
+        fontFamily: DESIGN_TOKENS.font.family,
+        fontSize: `${DESIGN_TOKENS.font.sizeMd}px`,
+        color: DESIGN_TOKENS.color.primaryDark,
+      })
+      .setOrigin(0.5, 0)
+      .setInteractive({ useHandCursor: true });
+    adChanceBtn.on('pointerup', () => this.tryAdTicketChance(adChanceBtn));
+
     const backBtn = this.add
       .text(24, 24, `[ ${i18n.t('common.back', '뒤로')} ]`, {
         fontFamily: DESIGN_TOKENS.font.family,
@@ -178,6 +188,41 @@ export class GachaScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     this.resultLayer.add(text);
+  }
+
+  private async tryAdTicketChance(btn: Phaser.GameObjects.Text): Promise<void> {
+    const services = getServices();
+    if (!services) return;
+    if (!services.ads.canWatch('gacha_ticket_chance')) {
+      this.flashMessage(i18n.t('gacha.adChance_capReached', '오늘 이 보상은 이미 받았어요.'));
+      return;
+    }
+    btn.disableInteractive();
+    btn.setColor(DESIGN_TOKENS.color.textSecondary);
+    const res = await services.ads.watch('gacha_ticket_chance');
+    if (!res.ok) {
+      this.flashMessage(i18n.t('gacha.adChance_failed', '광고 재생 실패'));
+      btn.setInteractive({ useHandCursor: true });
+      btn.setColor(DESIGN_TOKENS.color.primaryDark);
+      return;
+    }
+    // 50% chance to award one gachaTicket via the ad_reward source.
+    const won = Math.random() < 0.5;
+    if (won) {
+      await services.economy.grant('ad_reward', { snack: 0 }); // count the watch even on draw
+      // ad_reward source caps don't include gachaTicket — patch directly
+      // since this is a placement-specific bonus and not a generic grant.
+      await services.gameState.patch((d) => ({
+        ...d,
+        resources: {
+          ...d.resources,
+          gachaTicket: d.resources.gachaTicket + 1,
+        },
+      }));
+      this.flashMessage(i18n.t('gacha.adChance_won', '🎉 가챠권 +1!'));
+    } else {
+      this.flashMessage(i18n.t('gacha.adChance_lost', '아쉬워요! 다음 기회에…'));
+    }
   }
 
   private flashMessage(msg: string): void {

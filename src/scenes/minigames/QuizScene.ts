@@ -69,13 +69,71 @@ export class QuizScene extends Phaser.Scene {
   private showCapReachedAndReturn(): void {
     const { width, height } = this.scale;
     this.add
-      .text(width / 2, height / 2, i18n.t('quiz.daily_cap', '오늘은 이미 퀴즈를 풀었어요. 내일 다시 만나요!'), {
+      .text(width / 2, height / 2 - 40, i18n.t('quiz.daily_cap', '오늘은 이미 퀴즈를 풀었어요. 내일 다시 만나요!'), {
         fontFamily: DESIGN_TOKENS.font.family,
         fontSize: `${DESIGN_TOKENS.font.sizeLg}px`,
         color: DESIGN_TOKENS.color.textPrimary,
+        align: 'center',
+        wordWrap: { width: width - 200 },
       })
       .setOrigin(0.5);
-    this.time.delayedCall(1500, () => this.scene.start('MainScene'));
+
+    const services = getServices();
+    const canAd = services?.ads.canWatch('quiz_extra_session') ?? false;
+    if (canAd) {
+      const adBtn = this.add
+        .text(
+          width / 2,
+          height / 2 + 40,
+          `[ ${i18n.t('quiz.watch_ad_extra', '📺 광고 보고 한 번 더')} ]`,
+          {
+            fontFamily: DESIGN_TOKENS.font.family,
+            fontSize: `${DESIGN_TOKENS.font.sizeLg}px`,
+            color: DESIGN_TOKENS.color.primaryDark,
+          },
+        )
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+      adBtn.on('pointerup', () => this.tryAdExtraSession(adBtn));
+
+      this.add
+        .text(width / 2, height / 2 + 90, `[ ${i18n.t('common.back', '뒤로')} ]`, {
+          fontFamily: DESIGN_TOKENS.font.family,
+          fontSize: `${DESIGN_TOKENS.font.sizeMd}px`,
+          color: DESIGN_TOKENS.color.textSecondary,
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerup', () => this.scene.start('MainScene'));
+    } else {
+      this.time.delayedCall(1500, () => this.scene.start('MainScene'));
+    }
+  }
+
+  private async tryAdExtraSession(btn: Phaser.GameObjects.Text): Promise<void> {
+    const services = getServices();
+    if (!services) return;
+    btn.disableInteractive();
+    btn.setColor(DESIGN_TOKENS.color.textSecondary);
+    const res = await services.ads.watch('quiz_extra_session');
+    if (!res.ok) {
+      btn.setText(`[ ${i18n.t('quiz.ad_failed', '광고 재생 실패 - 다시 시도')} ]`);
+      btn.setInteractive({ useHandCursor: true });
+      btn.setColor(DESIGN_TOKENS.color.danger);
+      return;
+    }
+    // Reward = 1 extra session: decrement the counter so the cap check
+    // passes. Server-side equivalent is the quiz_extra_session ad source
+    // bumping the cap allowance, wired in PART 9 server work.
+    await services.gameState.patch((d) => ({
+      ...d,
+      dailyLimits: {
+        ...d.dailyLimits,
+        quizSessionsUsed: Math.max(0, d.dailyLimits.quizSessionsUsed - 1),
+      },
+    }));
+    // Restart the scene fresh so we re-enter the normal flow.
+    this.scene.restart();
   }
 
   override update(): void {

@@ -27,6 +27,11 @@
     "notEnough": "마법돌이 부족해요.",
     "offline": "서버 연결에 문제가 있어요.",
     "serverDenied": "뽑기에 실패했어요.",
+    "adChance": "광고 보고 50% 확률 가챠권",
+    "adChance_capReached": "오늘 이 보상은 이미 받았어요.",
+    "adChance_failed": "광고 재생 실패",
+    "adChance_won": "🎉 가챠권 +1!",
+    "adChance_lost": "아쉬워요! 다음 기회에…",
     "rates": {
       "title": "가챠 확률 공시",
       "cost": "1회 1 마법돌",
@@ -41,11 +46,15 @@
     "end": "끝내기"
   },
   "merge": {
-    "end": "끝내기"
+    "end": "끝내기",
+    "watch_ad_2x": "광고 보고 2배 받기",
+    "skip_ad": "바로 받기"
   },
   "quiz": {
     "end": "끝내기",
-    "daily_cap": "오늘은 이미 퀴즈를 풀었어요. 내일 다시 만나요!"
+    "daily_cap": "오늘은 이미 퀴즈를 풀었어요. 내일 다시 만나요!",
+    "watch_ad_extra": "📺 광고 보고 한 번 더",
+    "ad_failed": "광고 재생 실패 - 다시 시도"
   },
   "placement": {
     "selected": "선택됨",
