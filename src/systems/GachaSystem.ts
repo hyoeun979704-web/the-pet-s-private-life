@@ -1,4 +1,4 @@
-import { GACHA_CONFIG } from '@/config/Constants';
+import { GACHA_CONFIG, MAX_GACHA_SHARD_PER_CALL } from '@/config/Constants';
 import { GACHA_POOL, type GachaGrade } from '@/data/gachaPool';
 import type { OwnedCharacter } from '@/entities/Character';
 import type { SaveData } from '@/entities/SaveData';
@@ -88,7 +88,10 @@ export class GachaSystem {
     const grade = this.rollGrade(save.gachaPity);
     const defId = this.pickFromPool(grade);
     const ownsAlready = save.characters.some((c) => c.defId === defId);
-    const shardGain = ownsAlready ? DUPLICATE_SHARD_REWARD[grade] : 0;
+    // Mirror server cap: clamp per-call shard reward.
+    const shardGain = ownsAlready
+      ? Math.min(DUPLICATE_SHARD_REWARD[grade], MAX_GACHA_SHARD_PER_CALL)
+      : 0;
     const nextPity = grade === 'normal' ? save.gachaPity + 1 : 0;
 
     await this.gameState.patch((d) => {

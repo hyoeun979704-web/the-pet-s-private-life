@@ -13,6 +13,11 @@ function pct(n: number): string {
   return `${(n * 100).toFixed(2)}%`;
 }
 
+interface GachaRatesSceneData {
+  /** Scene key to return to when the user presses Back. Defaults to MainScene. */
+  returnTo?: string;
+}
+
 /**
  * Legal-disclosure scene. Required by Korean & Google Play probability
  * regulations for any gacha. Shows:
@@ -27,8 +32,14 @@ function pct(n: number): string {
  * during the purchase flow per platform guidelines).
  */
 export class GachaRatesScene extends Phaser.Scene {
+  private returnTo = 'MainScene';
+
   constructor() {
     super({ key: 'GachaRatesScene' });
+  }
+
+  init(data: GachaRatesSceneData): void {
+    this.returnTo = data?.returnTo ?? 'MainScene';
   }
 
   create(): void {
@@ -139,6 +150,6 @@ export class GachaRatesScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
-    backBtn.on('pointerup', () => this.scene.start('MainScene'));
+    backBtn.on('pointerup', () => this.scene.start(this.returnTo));
   }
 }

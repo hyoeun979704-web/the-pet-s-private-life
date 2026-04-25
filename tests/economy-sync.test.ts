@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   FATIGUE_CONFIG,
   GACHA_CONFIG,
+  MAX_GACHA_SHARD_PER_CALL,
   MAX_RESOURCE_GAIN_PER_SOURCE,
   PLACEMENT_CONFIG,
   RESOURCE_KEYS,
@@ -15,6 +16,7 @@ import {
   DAILY_LIMITS as FN_DAILY_LIMITS,
   GACHA as FN_GACHA,
   INVENTORY_STORAGE_SLOTS as FN_STORAGE_SLOTS,
+  MAX_GACHA_SHARD_PER_CALL as FN_MAX_GACHA_SHARD,
   MAX_RESOURCE_GAIN_PER_SOURCE as FN_CAPS,
   RESOURCE_KEYS as FN_RESOURCE_KEYS,
 } from '../functions/src/shared/economy';
@@ -49,5 +51,9 @@ describe('economy-sync: client Constants vs functions/shared', () => {
     expect(FN_GACHA.costMagicStone).toBe(GACHA_CONFIG.costMagicStone);
     expect(FN_GACHA.pityLimit).toBe(GACHA_CONFIG.pityLimit);
     expect(FN_GACHA.rates).toEqual(GACHA_CONFIG.rates);
+  });
+
+  it('MAX_GACHA_SHARD_PER_CALL matches client and server', () => {
+    expect(MAX_GACHA_SHARD_PER_CALL).toBe(FN_MAX_GACHA_SHARD);
   });
 });

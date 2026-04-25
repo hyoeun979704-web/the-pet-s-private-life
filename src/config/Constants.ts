@@ -66,6 +66,12 @@ export const DAILY_LIMITS = {
   quizSessions: 1,
 } as const;
 
+/**
+ * Defense in depth: caps the per-roll magicShard reward on a duplicate
+ * pull. Mirrors functions/shared/economy.ts MAX_GACHA_SHARD_PER_CALL.
+ */
+export const MAX_GACHA_SHARD_PER_CALL = 10;
+
 export const GACHA_CONFIG = {
   costMagicStone: 1,
   pityLimit: 20,

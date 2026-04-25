@@ -96,7 +96,9 @@ export class GachaScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0)
       .setInteractive({ useHandCursor: true });
-    ratesBtn.on('pointerup', () => this.scene.start('GachaRatesScene'));
+    ratesBtn.on('pointerup', () =>
+      this.scene.start('GachaRatesScene', { returnTo: 'GachaScene' }),
+    );
 
     const backBtn = this.add
       .text(24, 24, `[ ${i18n.t('common.back', '뒤로')} ]`, {
