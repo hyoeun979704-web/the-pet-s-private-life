@@ -35,6 +35,8 @@ export interface GameSettings {
   sfxVolume: number;
   largeFont: boolean;
   reduceMotion: boolean;
+  /** Set true after a remove_ads IAP. UI-side check; server stores too. */
+  adsRemoved?: boolean;
 }
 
 export interface OwnedFurniture {

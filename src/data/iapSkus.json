@@ -1,0 +1,36 @@
+{
+  "comment": "MVP IAP catalog. priceKrwHint is a UI-only label; actual price comes from Play Billing at runtime. Real productIds must match the Play Console listing.",
+  "skus": [
+    {
+      "id": "starter_pack",
+      "productId": "com.hyoeun979704.tpp.starter_pack",
+      "kind": "non_consumable",
+      "priceKrwHint": 4900,
+      "entitlement": {
+        "kind": "resources",
+        "deltas": { "snack": 500, "starDust": 100, "magicStone": 5, "gachaTicket": 3 }
+      }
+    },
+    {
+      "id": "remove_ads",
+      "productId": "com.hyoeun979704.tpp.remove_ads",
+      "kind": "non_consumable",
+      "priceKrwHint": 9900,
+      "entitlement": { "kind": "flag", "flag": "adsRemoved" }
+    },
+    {
+      "id": "magic_stone_small",
+      "productId": "com.hyoeun979704.tpp.magic_stone_small",
+      "kind": "consumable",
+      "priceKrwHint": 1900,
+      "entitlement": { "kind": "resources", "deltas": { "magicStone": 6 } }
+    },
+    {
+      "id": "magic_stone_medium",
+      "productId": "com.hyoeun979704.tpp.magic_stone_medium",
+      "kind": "consumable",
+      "priceKrwHint": 4900,
+      "entitlement": { "kind": "resources", "deltas": { "magicStone": 18 } }
+    }
+  ]
+}
