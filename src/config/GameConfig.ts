@@ -3,6 +3,8 @@ import { BootScene } from '@/scenes/BootScene';
 import { LoadingScene } from '@/scenes/LoadingScene';
 import { MainScene } from '@/scenes/MainScene';
 import { OfflineScene } from '@/scenes/OfflineScene';
+import { GachaRatesScene } from '@/scenes/GachaRatesScene';
+import { GachaScene } from '@/scenes/GachaScene';
 import { PlacementDemoScene } from '@/scenes/PlacementDemoScene';
 import { BlockPuzzleScene } from '@/scenes/minigames/BlockPuzzleScene';
 import { MergeGameScene } from '@/scenes/minigames/MergeGameScene';
@@ -38,6 +40,8 @@ export function createGameConfig(): Phaser.Types.Core.GameConfig {
       BlockPuzzleScene,
       MergeGameScene,
       QuizScene,
+      GachaScene,
+      GachaRatesScene,
     ],
   };
 }

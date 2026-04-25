@@ -60,6 +60,16 @@ export class MainScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     quizBtn.on('pointerup', () => this.scene.start('QuizScene'));
 
+    const gachaBtn = this.add
+      .text(width / 2, height / 2 + 280, `[ ${i18n.t('main.enter_gacha', 'Gacha')} ]`, {
+        fontFamily: DESIGN_TOKENS.font.family,
+        fontSize: `${DESIGN_TOKENS.font.sizeLg}px`,
+        color: DESIGN_TOKENS.color.primaryDark,
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    gachaBtn.on('pointerup', () => this.scene.start('GachaScene'));
+
     onNetworkChange((online) => {
       if (!online) this.scene.start('OfflineScene');
     });

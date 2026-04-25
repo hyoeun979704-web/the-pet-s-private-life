@@ -3,7 +3,8 @@
     "ok": "OK",
     "cancel": "キャンセル",
     "retry": "再試行",
-    "loading": "読み込み中…"
+    "loading": "読み込み中…",
+    "back": "戻る"
   },
   "boot": {
     "title": "ご主人さまのひみつの日常"
@@ -16,7 +17,25 @@
     "enter_placement": "配置する",
     "enter_block": "ブロックパズル",
     "enter_merge": "マージゲーム",
-    "enter_quiz": "クイズ"
+    "enter_quiz": "クイズ",
+    "enter_gacha": "ガチャ"
+  },
+  "gacha": {
+    "title": "ガチャ",
+    "roll": "ガチャを引く (1 魔法石)",
+    "viewRates": "確率の表示",
+    "notEnough": "魔法石が足りません。",
+    "offline": "サーバー接続に問題があります。",
+    "serverDenied": "ガチャに失敗しました。",
+    "rates": {
+      "title": "ガチャ確率表示",
+      "cost": "1回 1 魔法石",
+      "pity": "20回天井 (20連続ノーマル時は次回レア+確定)",
+      "duplicate": "重複時は魔法石の欠片に変換",
+      "header": "等級別確率",
+      "dupReward": "重複: 欠片報酬",
+      "poolHeader": "獲得可能キャラクター"
+    }
   },
   "block": {
     "end": "終了"

@@ -3,7 +3,8 @@
     "ok": "OK",
     "cancel": "Cancel",
     "retry": "Retry",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "back": "Back"
   },
   "boot": {
     "title": "The Pet's Private Life"
@@ -16,7 +17,25 @@
     "enter_placement": "Place furniture",
     "enter_block": "Block puzzle",
     "enter_merge": "Merge",
-    "enter_quiz": "Quiz"
+    "enter_quiz": "Quiz",
+    "enter_gacha": "Gacha"
+  },
+  "gacha": {
+    "title": "Gacha",
+    "roll": "Roll (1 magicStone)",
+    "viewRates": "View rates",
+    "notEnough": "Not enough magicStone.",
+    "offline": "Server connection issue.",
+    "serverDenied": "Gacha roll failed.",
+    "rates": {
+      "title": "Gacha Rates Disclosure",
+      "cost": "1 magicStone per roll",
+      "pity": "20-roll pity (20 consecutive normals -> next is guaranteed rare+)",
+      "duplicate": "Duplicates convert to magic shard",
+      "header": "Per-grade rates",
+      "dupReward": "Duplicate: shard reward",
+      "poolHeader": "Available characters"
+    }
   },
   "block": {
     "end": "End"
