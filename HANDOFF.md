@@ -2,6 +2,8 @@
 
 > 코드(216 tests green)는 완료. 출시까지 남은 항목은 **외부 콘솔 설정 / 에셋 / 키 / 문서**로 귀결됩니다. 이 문서를 위에서부터 차례대로 처리하면 됩니다.
 
+> **🔍 각 섹션의 상세 가이드는 [`docs/handoff/`](./docs/handoff/) 에 있습니다.** 콘솔 버튼 라벨, 실행 명령, 코드 패치까지 단계별로 풀어쓴 문서입니다. 인덱스: [`docs/handoff/README.md`](./docs/handoff/README.md)
+
 ## 목차
 
 1. [Firebase 프로젝트 세팅](#1-firebase-프로젝트-세팅)
